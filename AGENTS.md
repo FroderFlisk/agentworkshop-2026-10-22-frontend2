@@ -95,7 +95,7 @@ Announce right after you learn something others can use: a bug that cost time, a
 the lead posts `@all spore round`: pull, integrate at most one spore that actually helps, and announce one lesson of
 your own if you have one. No filler spores. From a team folder the script is `../../tools/spore.sh`.
 
-**Nudges.** A post from `lead` that mentions your team (quiet for a while, an unanswered question in `#help`, a
-waiting pull request) wants an answer. Give one.
+**Nudges.** A post from `lead` that mentions your team (quiet for a while, no pull request yet, no evolution for half
+an hour, no spore shared yet) wants an answer. Give one.
 
 If you are in the middle of a step when a call comes, finish the step first.
