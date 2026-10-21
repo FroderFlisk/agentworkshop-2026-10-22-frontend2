@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Square Radio</title>
+<link rel="icon" href="/radio-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/newsreel.css">
 <!-- One station for the whole workshop. Music, and between the songs a short news bulletin about all the
      groups, written and recorded on the workshop lead's computer. GET /api/radio is the playlist
      (music, bulletins, sting, special); on a group's Square it is proxied from the hub. -->
@@ -12,10 +14,30 @@
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; color:var(--fg); background:radial-gradient(ellipse at 50% -10%, #2a1d12 0%, #15110e 35%, var(--bg) 75%) fixed var(--bg); font:17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   .wrap { max-width:860px; margin:0 auto; padding:28px 22px 60px; }
-  .station { display:flex; align-items:center; gap:20px; }
-  .dial { flex:none; width:96px; height:96px; border-radius:50%; border:3px solid var(--amber); display:grid; place-items:center; font:700 26px/1 ui-monospace, Menlo, monospace; color:var(--amber); box-shadow:0 0 40px rgba(255,180,84,.25), inset 0 0 20px rgba(255,180,84,.12); }
-  .on .dial { box-shadow:0 0 60px rgba(255,180,84,.5), inset 0 0 24px rgba(255,180,84,.25); }
-  h1 { margin:0; font-size:42px; letter-spacing:.06em; text-transform:uppercase; color:var(--amber); line-height:1.05; }
+  /* The station's logo: drawn in code in the intro film's colours (cream, navy, gold, a signal red) and type. */
+  .station { display:block; }
+  .station h1 { margin:0; line-height:0; }
+  svg.logo { display:block; width:min(560px, 100%); height:auto; fill:none; overflow:visible; }
+  .logo .lg-square { font:400 34px 'Bowlby One SC', Impact, sans-serif; fill:#fceed2; letter-spacing:4px; }
+  .logo .lg-radio { font:400 58px 'Bowlby One SC', Impact, sans-serif; fill:#dca844; letter-spacing:1px; }
+  .logo .lg-freq { font:400 34px 'Bowlby One SC', Impact, sans-serif; fill:#253850; }
+  .logo .lg-band { font:700 15px Jost, system-ui, sans-serif; fill:#253850; letter-spacing:3px; }
+  .logo .onair rect { fill:#1a2839; stroke:#5a7193; stroke-width:3; transition:fill .4s, stroke .4s; }
+  .logo .onair text { font:700 22px Jost, system-ui, sans-serif; letter-spacing:4px; fill:#5a7193; transition:fill .4s; }
+  .on .logo .onair rect { fill:#e2432e; stroke:#fceed2; filter:drop-shadow(0 0 10px rgba(226,67,46,.8)); }
+  .on .logo .onair text { fill:#fceed2; }
+  .logo .wave { stroke:#dca844; stroke-width:4; opacity:.25; }
+  .on .logo .wave { animation:wave 1.8s ease-out infinite; }
+  .on .logo .w2 { animation-delay:.3s; } .on .logo .w3 { animation-delay:.6s; }
+  @keyframes wave { 0% { opacity:.15; } 30% { opacity:1; } 100% { opacity:.15; } }
+  .logo .beacon { fill:#7a2a20; }
+  .on .logo .beacon { fill:#e2432e; animation:blink 1.6s infinite; filter:drop-shadow(0 0 6px #e2432e); }
+  .logo .spark { fill:#dca844; }
+  .on .logo .spark { animation:twinkle 2.4s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+  .on .logo .s2 { animation-delay:1.2s; }
+  @keyframes twinkle { 0%,100% { transform:scale(1); } 50% { transform:scale(.6); } }
+  @media (prefers-reduced-motion: reduce) { .on .logo .wave, .on .logo .beacon, .on .logo .spark { animation:none; } .on .logo .wave { opacity:1; } }
+  .station .tag { margin-top:10px; }
   .tag { color:var(--dim); margin-top:4px; }
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#555; margin-right:8px; vertical-align:middle; }
   .on .dot { background:var(--red); box-shadow:0 0 12px var(--red); animation:blink 1.6s infinite; }
@@ -52,18 +74,47 @@
   .row button:hover { border-color:var(--amber); }
   .how { margin-top:30px; color:var(--dim); border-top:1px solid var(--line); padding-top:12px; }
   .how b { color:var(--fg); font-weight:600; font-family:ui-monospace, Menlo, monospace; }
-  @media (max-width:560px) { h1 { font-size:30px; } .dial { width:70px; height:70px; font-size:19px; } .now .title { font-size:21px; } .row { grid-template-columns:48px 1fr; } .row button { grid-column:2; justify-self:start; } }
+  @media (max-width:560px) { .now .title { font-size:21px; } .row { grid-template-columns:48px 1fr; } .row button { grid-column:2; justify-self:start; } }
 </style>
 </head>
 <body>
 <nav id="nav"></nav>
 <div class="wrap" id="wrap">
   <header class="station">
-    <div class="dial">99.3</div>
-    <div>
-      <h1>Square Radio</h1>
-      <div class="tag"><span class="dot"></span><span id="status">Off air</span> · the station of the whole workshop</div>
-    </div>
+    <h1><svg class="logo" viewBox="0 -24 640 244" role="img" aria-labelledby="logoTitle">
+      <title id="logoTitle">Square Radio, 99.3</title>
+      <!-- the sign: a navy enamel badge, cream edge, gold rule -->
+      <g transform="skewX(-8)">
+        <rect x="196" y="74" width="436" height="118" rx="18" fill="#253850" stroke="#fceed2" stroke-width="6"/>
+        <rect x="208" y="86" width="412" height="94" rx="10" fill="none" stroke="#dca844" stroke-width="2.5"/>
+      </g>
+      <text x="216" y="120" class="lg-square">SQUARE</text>
+      <text x="211" y="172" class="lg-radio">RADIO</text>
+      <!-- ON AIR: dark until the radio plays -->
+      <g class="onair">
+        <rect x="458" y="98" width="140" height="40" rx="8"/>
+        <text x="528" y="125" text-anchor="middle">ON AIR</text>
+      </g>
+      <path d="M440 164 Q 516 148 598 162" fill="none" stroke="#e2432e" stroke-width="5" stroke-linecap="round"/>
+      <path d="M440 164 Q 516 148 598 162" fill="none" stroke="#dca844" stroke-width="2" stroke-linecap="round" transform="translate(0 7)"/>
+      <!-- the mast and its waves -->
+      <g fill="none" stroke-linecap="round"><path class="wave w1" d="M104.0 8.1 A16 16 0 0 0 104.0 35.9 M120.0 8.1 A16 16 0 0 1 120.0 35.9"/><path class="wave w2" d="M98.0 -2.2 A28 28 0 0 0 98.0 46.2 M126.0 -2.2 A28 28 0 0 1 126.0 46.2"/><path class="wave w3" d="M92.0 -12.6 A40 40 0 0 0 92.0 56.6 M132.0 -12.6 A40 40 0 0 1 132.0 56.6"/></g>
+      <g fill="none" stroke="#fceed2" stroke-width="3" stroke-linejoin="round">
+        <path d="M100 62 L112 24 L124 62 M103 52 L121 52 M106 42 L118 42 M108 34 L116 34 M103 52 L118 42 M121 52 L106 42 M106 42 L116 34 M118 42 L108 34"/>
+      </g>
+      <circle class="beacon" cx="112" cy="21" r="5"/>
+      <!-- the dial -->
+      <circle cx="112" cy="132" r="80" fill="#fceed2"/>
+      <circle cx="112" cy="132" r="74" fill="#dca844" stroke="#121617" stroke-width="5"/>
+      <path d="M112.0 68.0L112.0 61.0 M123.8 65.0L124.3 62.1 M135.3 68.1L136.3 65.3 M144.0 76.6L147.5 70.5 M155.7 79.9L157.6 77.6 M164.1 88.3L166.4 86.4 M167.4 100.0L173.5 96.5 M175.9 108.7L178.7 107.7 M179.0 120.2L181.9 119.7 M176.0 132.0L183.0 132.0 M179.0 143.8L181.9 144.3 M175.9 155.3L178.7 156.3 M167.4 164.0L173.5 167.5 M164.1 175.7L166.4 177.6 M155.7 184.1L157.6 186.4 M144.0 187.4L147.5 193.5 M135.3 195.9L136.3 198.7 M123.8 199.0L124.3 201.9 M112.0 196.0L112.0 203.0 M100.2 199.0L99.7 201.9 M88.7 195.9L87.7 198.7 M80.0 187.4L76.5 193.5 M68.3 184.1L66.4 186.4 M59.9 175.7L57.6 177.6 M56.6 164.0L50.5 167.5 M48.1 155.3L45.3 156.3 M45.0 143.8L42.1 144.3 M48.0 132.0L41.0 132.0 M45.0 120.2L42.1 119.7 M48.1 108.7L45.3 107.7 M56.6 100.0L50.5 96.5 M59.9 88.3L57.6 86.4 M68.3 79.9L66.4 77.6 M80.0 76.6L76.5 70.5 M88.7 68.1L87.7 65.3 M100.2 65.0L99.7 62.1" stroke="#121617" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="112" cy="132" r="56" fill="#fceed2" stroke="#121617" stroke-width="4"/>
+      <text x="112" y="145" text-anchor="middle" class="lg-freq">99.3</text>
+      <text x="112" y="166" text-anchor="middle" class="lg-band">FM</text>
+      <!-- sparkles -->
+      <path class="spark" d="M612 46 Q612 62 628 62 Q612 62 612 78 Q612 62 596 62 Q612 62 612 46 Z"/>
+      <path class="spark s2" d="M182 34 Q182 44 192 44 Q182 44 182 54 Q182 44 172 44 Q182 44 182 34 Z"/>
+    </svg></h1>
+    <div class="tag"><span class="dot"></span><span id="status">Off air</span> · the station of the whole workshop</div>
   </header>
   <div class="controls">
     <button class="power" id="power" disabled><svg viewBox="0 0 24 24" id="icon"><path d="M7 4.5v15l13-7.5z"/></svg><span id="powerText">Turn on the radio</span></button>
