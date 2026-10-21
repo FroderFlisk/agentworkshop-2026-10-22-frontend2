@@ -90,8 +90,11 @@ writeFileSync(join(pdir, 'evolution', 'index.js'), 'module.exports = { init(ctx)
 writeFileSync(join(cdir, 'index.html'), '<!doctype html><title>The colony</title>\n');
 mkdirSync(join(cdir, 'exempelkvarteret'), { recursive: true });
 writeFileSync(join(cdir, 'exempelkvarteret', 'index.html'), '<!doctype html><title>Example tile</title><p>hello</p>\n');
+// En dold ruta (som mallens exempel i drift): serveras, men listas inte och ropas inte ut.
+mkdirSync(join(cdir, 'provrutan-dold'), { recursive: true });
+writeFileSync(join(cdir, 'provrutan-dold', 'index.html'), '<!doctype html><title>Hidden tile</title><p>hidden</p>\n');
 
-const MILJO = { DATA_DIR: dir, PLUGINS_DIR: pdir, COLONY_DIR: cdir, EVO_CHAT_MS: '1500' };
+const MILJO = { DATA_DIR: dir, PLUGINS_DIR: pdir, COLONY_DIR: cdir, EVO_CHAT_MS: '1500', COLONY_HIDE: 'provrutan-dold' };
 let S = await starta(MILJO, 'klassisk');
 let B = S.B;
 const post = (body, headers = {}) => fetch(B + '/api/messages', { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
@@ -298,6 +301,7 @@ try {
   ok('/colony och /staden leder till /colony/, gamla kvarterslänkar till rutan');
   assert.match((await hamta(B, '/colony/')).text, /The colony/); assert.match((await hamta(B, '/staden')).text, /The colony/); ok('kolonisidan, även via /staden');
   x = await hamta(B, '/colony/exempelkvarteret/'); assert.equal(x.status, 200); assert.match(x.text, /hello/); ok('rutan serveras');
+  x = await hamta(B, '/colony/provrutan-dold/'); assert.equal(x.status, 200); assert.match(x.text, /hidden/); ok('en dold ruta (COLONY_HIDE) serveras men listas inte');
   assert.equal((await fetch(B + '/colony/..%2F..%2Fserver.js')).status, 404); assert.equal((await fetch(B + '/colony/exempelkvarteret/..%2F..%2F..%2Fpackage.json')).status, 404); ok('kolonin: ingen path traversal');
   await sidan(B, '/teams', 'teams.html'); await sidan(B, '/lagen', 'teams.html'); ok('/teams (och /lagen)');
   await sidan(B, '/news', 'news.html'); await sidan(B, '/radio', 'radio.html'); await sidan(B, '/nav.js', 'nav.js'); ok('/news, /radio, /nav.js');

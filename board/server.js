@@ -30,7 +30,8 @@
 //   POST /api/messages           {from, channel, text, reply_to}  (JSON eller form-urlencoded). Huvudkanalen heter
 //                                square; channel=torget (det gamla namnet) blir square, både när man postar och läser
 //   GET  /api/channels  /api/agents  /api/stream (SSE, ?channel=)  /api/health  /api/plugins
-//   GET  /api/tiles              [{team, path, url, title, hero}]   (/api/kvarter ger den gamla listan ["team/"])
+//   GET  /api/tiles              [{team, path, url, title, hero}]   (/api/kvarter ger den gamla listan ["team/"]);
+//                                mallens exempelruta (COLONY_HIDE) räknas inte
 //   POST /api/lag  GET /api/lag  agentuppsättningen per team; ändringar blir evolutionshändelser
 //   GET  /api/evolution          ?since=<id>&limit=&team=
 //   POST /api/aktivitet  GET /api/aktivitet   vad agenterna gör just nu (bara i minnet)
@@ -92,6 +93,10 @@ if (process.env.GRUPPER) {
 
 const PUBLIC = path.join(__dirname, 'public');
 const COLONY = path.resolve(process.env.COLONY_DIR || path.join(PUBLIC, 'colony'));
+// Rutor som inte visas i kolonin. Mallens exempel ligger kvar som förebild (/colony/exempelkvarteret/ går att
+// öppna, och dess plugin svarar), men det tar ingen plats bland teamens rutor och ropas aldrig ut som nytt.
+// Namnet vägras redan av tools/new-team.sh, så inget riktigt team kan gömmas av misstag. COLONY_HIDE=a,b byter listan.
+const DOLDA_RUTOR = new Set(String(process.env.COLONY_HIDE ?? 'exempelkvarteret').split(',').map(s => s.trim()).filter(Boolean));
 // PLUGINS_DIR gör att testerna kan köra mot en katalog med bara exempelkvarteret i. Utan den mätte
 // board/test.mjs absoluta antal med ALLA mergade plugins inlästa, och ett enda kvarter som postar
 // när det startar gjorde sviten röd för hela mergekön.
@@ -992,7 +997,7 @@ function omdirigera(res, till) { res.writeHead(301, { location: till }); res.end
 // ---------- kolonin ----------
 function tileTeams() {
   let poster; try { poster = fs.readdirSync(COLONY); } catch { return []; }
-  return poster.filter(f => TEAM_DIR_RE.test(f) && arFil(path.join(COLONY, f, 'index.html'))).sort();
+  return poster.filter(f => TEAM_DIR_RE.test(f) && !DOLDA_RUTOR.has(f) && arFil(path.join(COLONY, f, 'index.html'))).sort();
 }
 function pluginTeams() {
   let poster; try { poster = fs.readdirSync(PLUGINS); } catch { return []; }
@@ -1045,6 +1050,7 @@ function kolonistart() {
   const gammal = (o, k) => (harEgen(o, k) ? o[k] : null);
   const poster = [];
   for (const t of [...new Set([...Object.keys(nu.tiles), ...Object.keys(nu.plugins)])].sort()) {
+    if (DOLDA_RUTOR.has(t)) continue;
     const tile = nu.tiles[t] || null, plugin = nu.plugins[t] || null;
     const tileNy = tile && !gammal(ft, t), tileAndrad = tile && gammal(ft, t) && gammal(ft, t) !== tile;
     const pluginNy = plugin && !gammal(fp, t), pluginAndrad = plugin && gammal(fp, t) && gammal(fp, t) !== plugin;
