@@ -6,62 +6,123 @@
 <title>The Colony Courier</title>
 <!-- The group's newspaper. The issues are written by the workshop lead's editor, from what actually
      happened on this Square, with a source (a post id) for every story. GET /api/news, newest first. -->
+<link rel="stylesheet" href="/newsreel.css">
 <style>
-  :root { --paper:#f4efe4; --ink:#16130f; --dim:#6f665a; --red:#b3261e; --rule:#d8cfbd; --hi:#fff6c9; }
+  /* The look of the intro film: cream paper, navy and thick black ink, gold for accents, red only now and
+     then. Every colour and typeface comes from /newsreel.css (--nr-*), nowhere else. */
   * { box-sizing:border-box; }
-  html, body { margin:0; background:var(--paper); color:var(--ink); font:18px/1.5 Georgia, "Times New Roman", serif; overflow-wrap:break-word; }
-  .sheet { max-width:1180px; margin:0 auto; padding:22px 28px 60px; }
-  .mast { text-align:center; border-bottom:4px double var(--ink); padding-bottom:8px; margin-bottom:18px; }
-  .mono { font:13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform:uppercase; letter-spacing:.09em; color:var(--dim); }
-  .mast .top { display:flex; justify-content:space-between; gap:12px; padding-bottom:6px; }
-  .mast h1 { margin:0; font-size:clamp(30px, 8vw, 76px); line-height:1.02; font-weight:900; letter-spacing:-.01em; }
-  .mast .bar { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--ink); margin-top:8px; padding-top:5px; }
-  .fresh { background:var(--ink); color:var(--paper); text-align:center; padding:8px; margin:-6px 0 16px; animation:blink 1.2s ease-in-out 3; }
-  @keyframes blink { 50% { opacity:.55; } }
-  .headline { font-size:clamp(30px, 4.4vw, 52px); line-height:1.08; font-weight:900; margin:4px 0 10px; }
-  .standfirst { font-size:22px; font-style:italic; margin:0 0 20px; color:#2d2822; max-width:60em; }
-  .stories { columns:2 380px; column-gap:34px; column-rule:1px solid var(--rule); }
-  .story { break-inside:avoid; margin:0 0 20px; padding-bottom:14px; border-bottom:1px solid var(--rule); }
-  .story p { margin:0; font-size:20px; }
-  .team { font-weight:700; color:var(--red); }
-  .src { margin-top:6px; }
-  .src a { color:var(--dim); text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:8px; cursor:pointer; }
-  .src a:hover { color:var(--ink); border-color:var(--ink); }
-  .quote { margin-top:8px; padding:8px 10px; background:var(--hi); border-left:3px solid var(--ink); font:14px/1.45 ui-monospace, Menlo, monospace; white-space:pre-wrap; word-break:break-word; }
-  .quote b { font-weight:700; }
-  .empty { text-align:center; padding:70px 10px 50px; }
-  .empty .big { font-size:30px; font-style:italic; margin-bottom:12px; }
-  .empty .small { color:var(--dim); max-width:36em; margin:0 auto; }
-  section h2 { margin:30px 0 10px; padding-top:8px; border-top:4px double var(--ink); font-weight:400; }
-  .earlier details { border-bottom:1px solid var(--rule); padding:8px 0; }
-  .earlier summary { cursor:pointer; font-size:20px; list-style:none; }
+  html { background:var(--nr-paper); }
+  body { margin:0; min-height:100vh; color:var(--nr-ink); font:400 19px/1.5 var(--nr-ui); overflow-wrap:break-word;
+         -webkit-font-smoothing:antialiased;
+         background:radial-gradient(ellipse 130% 80% at 50% 0%, var(--nr-paper-light) 0%, var(--nr-paper) 55%, var(--nr-paper-dark) 100%) fixed var(--nr-paper); }
+  .sheet { max-width:1180px; margin:0 auto; padding:26px 28px 64px; }
+  .label { font:600 13px/1.4 var(--nr-ui); text-transform:uppercase; letter-spacing:.14em; color:var(--nr-navy); }
+  a:focus-visible, summary:focus-visible { outline:3px solid var(--nr-navy); outline-offset:3px; }
+
+  /* The masthead: a title card in navy with a gold shadow, between a thick ink rule and a gold band. */
+  .mast { text-align:center; margin-bottom:22px; }
+  .mast .top { display:flex; justify-content:space-between; align-items:center; gap:12px; padding-bottom:10px; }
+  .mast .top span:nth-child(2)::before, .mast .top span:nth-child(2)::after { content:'\2605'; color:var(--nr-red); margin:0 .8em; }
+  .mast h1 { margin:0; padding:14px 0 16px; border-top:6px solid var(--nr-ink); font:400 clamp(30px, 7.4vw, 84px)/1 var(--nr-display);
+             text-transform:uppercase; letter-spacing:.01em; color:var(--nr-navy); text-shadow:.05em .05em 0 var(--nr-gold); }
+  .mast .bar { display:flex; justify-content:space-between; gap:12px; padding:7px 14px; color:var(--nr-ink);
+               background:var(--nr-band); border-top:3px solid var(--nr-ink); border-bottom:3px solid var(--nr-ink); }
+  .fresh { text-align:center; padding:10px 12px; margin:0 0 22px; background:var(--nr-navy-deep); color:var(--nr-paper-light);
+           border:3px solid var(--nr-ink); box-shadow:5px 5px 0 var(--nr-gold); font:400 20px/1.2 var(--nr-display);
+           text-transform:uppercase; letter-spacing:.03em; animation:blink 1.2s ease-in-out 3; }
+  .fresh::before, .fresh::after { content:'\2605'; color:var(--nr-gold); margin:0 .6em; }
+  @keyframes blink { 50% { background:var(--nr-red); } }
+
+  /* The latest issue. */
+  .headline { margin:6px 0 14px; font:400 clamp(28px, 4.2vw, 52px)/1.08 var(--nr-display); text-transform:uppercase;
+              letter-spacing:.01em; color:var(--nr-ink); }
+  .standfirst { margin:0 0 26px; padding:2px 0 2px 18px; max-width:52em; border-left:8px solid var(--nr-gold);
+                font:500 clamp(19px, 2vw, 23px)/1.45 var(--nr-ui); color:var(--nr-navy); }
+  .stories { columns:2 380px; column-gap:44px; column-rule:2px solid var(--nr-ink); padding-top:20px; border-top:3px solid var(--nr-ink); }
+  .story { break-inside:avoid; margin:0; padding:0 0 30px; }
+  .story::before { content:''; display:block; width:46px; height:7px; margin:0 0 12px; background:var(--nr-gold); }
+  .story p { margin:0; font-size:20px; line-height:1.5; }
+  .team { font-weight:700; color:var(--nr-navy); padding:0 .06em; background:linear-gradient(transparent 62%, var(--nr-band) 62%); }
+  .headline .team, .earlier summary .team { font-weight:400; background:none; padding:0; text-decoration:underline;
+                                            text-decoration-color:var(--nr-gold); text-decoration-thickness:.14em; text-underline-offset:.1em; }
+  .src { margin-top:12px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; }
+  .src a { font:600 14px/1 var(--nr-ui); letter-spacing:.05em; font-variant-numeric:tabular-nums; color:var(--nr-navy);
+           text-decoration:none; background:var(--nr-paper-light); border:2px solid var(--nr-navy); border-radius:999px;
+           padding:5px 11px; cursor:pointer; }
+  .src a:hover { background:var(--nr-gold); color:var(--nr-ink); border-color:var(--nr-ink); }
+  .quote { margin-top:10px; padding:10px 12px; background:var(--nr-paper-light); color:var(--nr-ink); border:2px solid var(--nr-ink);
+           border-left:8px solid var(--nr-gold); font:14.5px/1.5 var(--nr-mono); white-space:pre-wrap; word-break:break-word; }
+  .quote b { font-weight:700; color:var(--nr-navy); }
+
+  /* Before the first issue: a "please stand by" card, as in the film. */
+  .empty { text-align:center; max-width:880px; margin:34px auto 24px; padding:44px 30px 42px; background:var(--nr-navy);
+           color:var(--nr-paper); border:4px solid var(--nr-ink); outline:3px solid var(--nr-gold); outline-offset:-14px;
+           box-shadow:8px 8px 0 var(--nr-ink); }
+  .empty::before { content:'\2605  Please stand by  \2605'; display:block; margin-bottom:16px; white-space:pre;
+                   font:600 14px/1.4 var(--nr-ui); text-transform:uppercase; letter-spacing:.2em; color:var(--nr-gold); }
+  .empty .big { margin-bottom:16px; font:400 clamp(24px, 3.4vw, 38px)/1.15 var(--nr-display); text-transform:uppercase;
+                color:var(--nr-paper-light); }
+  .empty .small { max-width:36em; margin:0 auto; color:var(--nr-paper); }
+
+  /* Earlier issues and, on the hub, every group's front page. */
+  section h2 { margin:44px 0 16px; padding-top:12px; border-top:6px solid var(--nr-ink); font:400 clamp(20px, 2.4vw, 28px)/1.15 var(--nr-display);
+               text-transform:uppercase; letter-spacing:.02em; color:var(--nr-navy); }
+  .earlier details { padding:12px 0; border-bottom:2px solid var(--nr-band); }
+  .earlier summary { cursor:pointer; list-style:none; }
   .earlier summary::-webkit-details-marker { display:none; }
-  .earlier summary .mono { margin-right:10px; }
-  .earlier summary b { font-weight:700; }
-  .earlier ul { margin:10px 0 4px; padding-left:22px; }
-  .earlier li { margin:0 0 8px; }
-  .fronts { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:18px; }
-  .front { background:#fbf8f1; border:1px solid var(--rule); padding:14px 16px; display:flex; flex-direction:column; }
-  .front .mono { color:var(--red); }
-  .front h3 { font-size:24px; line-height:1.15; margin:6px 0 8px; }
-  .front p { margin:0 0 10px; font-size:17px; }
-  .front a { margin-top:auto; color:var(--ink); font:14px ui-monospace, Menlo, monospace; }
-  .front.quiet h3 { color:var(--dim); font-weight:400; font-style:italic; }
-  @media (max-width:640px) { .sheet { padding:14px 14px 40px; } .stories { columns:1; } .standfirst { font-size:19px; } .story p { font-size:18px; } .fronts { grid-template-columns:1fr; } .mast .top span:nth-child(2), .mast .bar span:nth-child(2) { display:none; } }
+  .earlier summary::before { content:'+'; display:inline-block; width:28px; height:28px; margin-right:12px; border-radius:50%;
+                             text-align:center; vertical-align:2px; font:700 18px/28px var(--nr-ui); background:var(--nr-gold); color:var(--nr-ink); }
+  .earlier details[open] summary::before { content:'\2212'; }
+  .earlier summary .label { margin-right:12px; }
+  .earlier summary b { font:400 20px/1.25 var(--nr-display); text-transform:uppercase; color:var(--nr-ink); }
+  .earlier summary:hover b { color:var(--nr-navy); }
+  .earlier ul { margin:12px 0 4px; padding-left:62px; }
+  .earlier li { margin:0 0 8px; font-size:18px; }
+  .earlier li::marker { color:var(--nr-ochre); }
+  .fronts { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:22px; }
+  .front { display:flex; flex-direction:column; padding:16px 18px 18px; background:var(--nr-paper-light);
+           border:3px solid var(--nr-ink); box-shadow:6px 6px 0 var(--nr-navy); }
+  .front .label { align-self:flex-start; padding:4px 10px; background:var(--nr-navy); color:var(--nr-paper-light); }
+  .front h3 { margin:12px 0 10px; font:400 24px/1.12 var(--nr-display); text-transform:uppercase; color:var(--nr-ink); }
+  .front p { margin:0 0 14px; font-size:17px; }
+  .front a { margin-top:auto; align-self:flex-start; padding-bottom:2px; font:600 15px/1.3 var(--nr-ui); text-transform:uppercase;
+             letter-spacing:.08em; color:var(--nr-navy); text-decoration:none; border-bottom:3px solid var(--nr-gold); }
+  .front a::after { content:' \2192'; }
+  .front a:hover { color:var(--nr-ink); border-color:var(--nr-ink); }
+  .front.quiet { background:transparent; border-style:dashed; box-shadow:none; }
+  .front.quiet h3 { color:var(--nr-faint); }
+
+  @media (max-width:640px) {
+    .sheet { padding:16px 16px 40px; }
+    .label { font-size:12px; letter-spacing:.1em; }
+    .mast .top span:nth-child(2), .mast .bar span:nth-child(2) { display:none; }
+    .mast .bar span:empty + span:nth-child(2) { display:block; flex:1; }   /* no issue yet: the band keeps its line */
+    .mast h1 { padding:10px 0 12px; border-top-width:5px; }
+    .mast .bar { padding:6px 10px; }
+    .fresh { font-size:15px; padding:9px 8px; box-shadow:4px 4px 0 var(--nr-gold); }
+    .fresh::before, .fresh::after { margin:0 .35em; }
+    .standfirst { font-size:19px; padding-left:14px; border-left-width:6px; }
+    .stories { columns:1; padding-top:16px; }
+    .story p { font-size:18px; }
+    .fronts { grid-template-columns:1fr; }
+    .empty { padding:34px 18px 32px; outline-offset:-10px; box-shadow:5px 5px 0 var(--nr-ink); }
+    .earlier summary b { display:block; margin-top:6px; }
+    .earlier ul { padding-left:22px; }
+  }
 </style>
 </head>
 <body>
 <nav id="nav"></nav>
 <div class="sheet">
   <header class="mast">
-    <div class="top mono"><span id="edition">The Square edition</span><span>News from what happened on The Square</span><span id="date"></span></div>
+    <div class="top label"><span id="edition">The Square edition</span><span>News from what happened on The Square</span><span id="date"></span></div>
     <h1>The Colony Courier</h1>
-    <div class="bar mono"><span id="issue">&nbsp;</span><span>Every story links to its sources</span><span id="time">&nbsp;</span></div>
+    <div class="bar label"><span id="issue"></span><span>Every story links to its sources</span><span id="time"></span></div>
   </header>
-  <div class="fresh mono" id="fresh" hidden></div>
+  <div class="fresh" id="fresh" hidden></div>
   <main id="latest"></main>
-  <section id="frontsBox" hidden><h2 class="mono">Front pages from all groups</h2><div class="fronts" id="fronts"></div></section>
-  <section class="earlier" id="earlierBox" hidden><h2 class="mono">Earlier issues</h2><div id="earlier"></div></section>
+  <section id="frontsBox" hidden><h2>Front pages from all groups</h2><div class="fronts" id="fronts"></div></section>
+  <section class="earlier" id="earlierBox" hidden><h2>Earlier issues</h2><div id="earlier"></div></section>
 </div>
 <script src="/nav.js" defer></script>
 <script>
@@ -100,7 +161,7 @@ function story(n, i) {
   const p = el('p'); write(p, n.text || ''); art.append(p);
   const ids = (n.kallor || n.sources || []).map(Number).filter(Boolean);
   if (ids.length) {
-    const src = el('div', 'src mono'); const box = el('div', 'quote'); box.hidden = true;
+    const src = el('div', 'src label'); const box = el('div', 'quote'); box.hidden = true;
     src.append('Sources ');
     for (const id of ids) {
       const a = el('a', null, '#' + id);
@@ -116,7 +177,7 @@ function story(n, i) {
 function renderLatest() {
   const box = $('latest'); box.textContent = '';
   if (!issues.length) {
-    $('issue').textContent = ' '; $('time').textContent = ' ';
+    $('issue').textContent = ''; $('time').textContent = '';
     if (health.hub) { box.hidden = true; return; }
     box.hidden = false;
     const e = el('div', 'empty');
@@ -127,7 +188,7 @@ function renderLatest() {
   box.hidden = false;
   const x = issues[0];
   $('issue').textContent = 'No. ' + x.nummer;
-  $('time').textContent = x.ts ? 'Out at ' + clock(x.ts) : ' ';
+  $('time').textContent = x.ts ? 'Out at ' + clock(x.ts) : '';
   const h = el('h2', 'headline'); write(h, x.rubrik || ''); box.append(h);
   if (x.sammanfattning) { const s = el('p', 'standfirst'); write(s, x.sammanfattning); box.append(s); }
   const col = el('div', 'stories');
@@ -141,7 +202,7 @@ function renderEarlier() {
   const box = $('earlier'); box.textContent = '';
   for (const x of rest) {
     const d = el('details'); const s = el('summary');
-    s.append(el('span', 'mono', 'No. ' + x.nummer + (x.ts ? ' · ' + clock(x.ts) : '')));
+    s.append(el('span', 'label', 'No. ' + x.nummer + (x.ts ? ' · ' + clock(x.ts) : '')));
     const b = el('b'); write(b, x.rubrik || ''); s.append(b);
     d.append(s);
     const ul = el('ul');
@@ -174,7 +235,7 @@ async function loadFronts() {
   const box = $('fronts'); box.textContent = '';
   for (const { g, x } of fronts) {
     const c = el('div', 'front' + (x ? '' : ' quiet'));
-    c.append(el('div', 'mono', (g.namn || g.id) + (x ? ' · No. ' + x.nummer + (x.ts ? ' · ' + clock(x.ts) : '') : '')));
+    c.append(el('div', 'label', (g.namn || g.id) + (x ? ' · No. ' + x.nummer + (x.ts ? ' · ' + clock(x.ts) : '') : '')));
     c.append(el('h3', null, x ? x.rubrik : 'No issue yet'));
     if (x && (x.sammanfattning || (x.notiser && x.notiser[0]))) c.append(el('p', null, x.sammanfattning || x.notiser[0].text));
     const a = el('a', null, 'Read the ' + (g.namn || g.id) + ' edition'); a.href = g.url.replace(/\/$/, '') + '/news'; c.append(a);

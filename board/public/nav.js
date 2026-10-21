@@ -13,23 +13,27 @@
   if (window.__squareNav) return;
   window.__squareNav = true;
 
+  // The newsreel look of the intro film: a navy band with a gold rule, Jost for the items, Bowlby One SC for
+  // the group's name. The fonts are this board's own files (see newsreel.css), with system fallbacks.
   var CSS = [
-    ':root{--nav-h:46px}',
-    'nav#nav.tg-nav{display:flex;align-items:center;gap:2px;box-sizing:border-box;width:100%;min-height:46px;margin:0;',
-    'padding:0 10px;background:#0b0d10;color:#e6e8eb;border:0;border-bottom:1px solid #262c35;position:sticky;top:0;',
+    "@font-face{font-family:'Bowlby One SC';font-weight:400;font-display:swap;src:url(/bowlby-one-sc.woff2) format('woff2')}",
+    "@font-face{font-family:'Jost';font-weight:400 700;font-display:swap;src:url(/jost.woff2) format('woff2')}",
+    ':root{--nav-h:48px}',
+    'nav#nav.tg-nav{display:flex;align-items:center;gap:4px;box-sizing:border-box;width:100%;min-height:48px;margin:0;',
+    'padding:0 10px;background:#253850;color:#fceed2;border:0;border-bottom:3px solid #dca844;position:sticky;top:0;',
     'z-index:2147483000;overflow-x:auto;overflow-y:hidden;white-space:nowrap;grid-column:1/-1;scrollbar-width:none;',
-    'font:600 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;letter-spacing:.01em;',
-    'text-align:left;-webkit-font-smoothing:antialiased;box-shadow:0 1px 0 rgba(0,0,0,.25)}',
+    "font:600 16px/1.2 Jost,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;letter-spacing:.02em;",
+    'text-align:left;-webkit-font-smoothing:antialiased;box-shadow:0 2px 0 #121617}',
     'nav#nav.tg-nav::-webkit-scrollbar{display:none}',
-    'nav#nav.tg-nav .tg-grupp{flex:none;color:#ffb454;font:700 13px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;',
-    'letter-spacing:.08em;text-transform:uppercase;padding:6px 12px 6px 4px;margin:0 6px 0 0;border-right:1px solid #262c35}',
-    'nav#nav.tg-nav a{flex:none;display:inline-block;color:#c4cad3;background:transparent;text-decoration:none;',
-    'border:1px solid transparent;border-radius:8px;padding:7px 12px;margin:0;font:inherit;line-height:1.2}',
-    'nav#nav.tg-nav a:hover{color:#fff;background:#1a1f27}',
-    'nav#nav.tg-nav a:focus-visible{outline:2px solid #ffb454;outline-offset:1px}',
-    'nav#nav.tg-nav a[aria-current="page"]{color:#0b0d10;background:#ffb454}',
-    'nav#nav.tg-nav a.tg-hub{margin-left:auto;border-color:#39414c;color:#e6e8eb}',
-    'nav#nav.tg-nav a.tg-hub[aria-current="page"]{color:#0b0d10;border-color:#ffb454}',
+    "nav#nav.tg-nav .tg-grupp{flex:none;color:#dca844;font:400 15px/1 'Bowlby One SC',Impact,'Arial Black',sans-serif;",
+    'letter-spacing:.04em;text-transform:uppercase;padding:6px 14px 6px 4px;margin:0 6px 0 0;border-right:2px solid #3b5272}',
+    'nav#nav.tg-nav a{flex:none;display:inline-block;color:#f6e1bd;background:transparent;text-decoration:none;',
+    'border:2px solid transparent;border-radius:8px;padding:6px 12px;margin:0;font:inherit;line-height:1.2}',
+    'nav#nav.tg-nav a:hover{color:#fceed2;background:#32496a}',
+    'nav#nav.tg-nav a:focus-visible{outline:2px solid #dca844;outline-offset:1px}',
+    'nav#nav.tg-nav a[aria-current="page"]{color:#121617;background:#dca844;border-color:#121617}',
+    'nav#nav.tg-nav a.tg-hub{margin-left:auto;border-color:#5a7193;color:#fceed2}',
+    'nav#nav.tg-nav a.tg-hub[aria-current="page"]{color:#121617;border-color:#121617}',
     '@media (max-width:560px){nav#nav.tg-nav{font-size:14px;padding:0 6px}nav#nav.tg-nav a{padding:6px 8px}',
     'nav#nav.tg-nav .tg-grupp{display:none}}'
   ].join('');

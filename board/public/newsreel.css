@@ -1,0 +1,21 @@
+/* The newsreel look: the same paper, ink and type as the workshop's intro film, shared by the pages that
+   carry it (workshop, news) and by the menu. Fonts are served from this board, not from a CDN, so the pages
+   look right on a venue network that blocks third-party fonts. Licences: /fonts-license.txt */
+@font-face { font-family: 'Bowlby One SC'; font-style: normal; font-weight: 400; font-display: swap; src: url(/bowlby-one-sc.woff2) format('woff2'); }
+@font-face { font-family: 'Jost'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(/jost.woff2) format('woff2'); }
+:root {
+  --nr-paper-light: #fceed2;
+  --nr-paper: #f6e1bd;
+  --nr-paper-dark: #ebd2a8;
+  --nr-band: #edc884;
+  --nr-gold: #dca844;
+  --nr-ochre: #cf973b;
+  --nr-navy: #253850;
+  --nr-navy-deep: #1a2839;
+  --nr-ink: #121617;
+  --nr-red: #e2432e;
+  --nr-faint: rgba(18, 22, 23, .62);
+  --nr-display: 'Bowlby One SC', Impact, 'Arial Black', sans-serif;
+  --nr-ui: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --nr-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
