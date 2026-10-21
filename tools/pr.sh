@@ -70,8 +70,15 @@ paths=(); for p in "projects/$team" "board/plugins/$team" "board/public/colony/$
 [ -e "board/public/colony/$team/index.html" ] || echo "  note: no frontend yet (board/public/colony/$team/index.html). Then your team has no tile in the colony (/colony)."
 git add -- "${paths[@]}"
 if git diff --cached --quiet; then echo "→ nothing new to commit"; else git commit -q -m "$team: $vad" && echo "→ committed"; fi
-andra=$(git status --porcelain | grep -v "^?? \.board-name" | grep -vE " (projects/$team|board/plugins/$team|board/public/colony/$team)" | head -5 || true)
-[ -n "$andra" ] && { echo "  note: these changes do NOT come along (outside your team's folders):"; echo "$andra" | sed 's/^/    /'; }
+# The folder names end in / or the line: board/public/colony/<team>-map/ is NOT your folder and must be reported.
+andra=$(git status --porcelain | grep -v "^?? \.board-name" | grep -vE " (projects/$team|board/plugins/$team|board/public/colony/$team)(/|$)" | head -5 || true)
+if [ -n "$andra" ]; then
+  echo "  note: these changes do NOT come along (outside your team's folders):"; echo "$andra" | sed 's/^/    /'
+  if echo "$andra" | grep -q "board/public/colony/"; then
+    echo "  note: each team has one tile, board/public/colony/$team/. Put extra pages inside it, for example"
+    echo "        board/public/colony/$team/map.html, and link to them from your index.html."
+  fi
+fi
 
 # 3b. Sync with main. Your PRs are squash-merged, so the branch diverges from main after every delivery and
 #     the next PR would conflict with your own previous one. On conflict YOUR version wins: you are the only
