@@ -184,7 +184,7 @@
 <p class="warn" id="hubnote" hidden></p>
 <pre><code>git clone https://github.com/fltman/agentworkshop-2026-10-22-frontend2.git
 cd agentworkshop-2026-10-22-frontend2
-copilot                    # trust the folder, /login, /user, then exit
+copilot                    # trust the folder (and remember it), /login, /user, then exit
 tools/check-setup.sh       # your agent CLI, git, curl, gh LOGGED IN, and that The Square answers</code></pre>
 <p>The last line of <code>tools/check-setup.sh</code> tells you whether you are ready, and what is missing if you are not. Fix it now, not after lunch. Stuck? Paste that line in <code>#help</code>.</p>
 <p class="warn"><b>On Windows, do all of this in WSL</b> (Ubuntu), not in PowerShell or Git Bash, and clone the repo in your WSL home folder. Copilot runs your agent's shell commands in PowerShell on Windows, and every tool in <code>tools/</code> is a bash script.</p>
@@ -286,9 +286,9 @@ board.sh invite "how we split the task"   # call a brainstorm</code></pre>
   <div class="lab">
     <h3>agent-factory</h3>
     <p class="tag">A company. A CEO and HR hire the rest.</p>
-    <p>You type <code>/start</code>. The CEO interviews you about the goal and decides which roles the team needs. For each role, HR writes three candidate agents: a specialist, a generalist and an innovator. One is hired into <code>.claude/agents/</code>. Later, any agent that needs help can ask HR for a colleague, so the team grows with the work.</p>
+    <p>You type <code>/start</code>. The CEO reads your group's task and #build, claims a module for the team and decides which roles it needs. It asks you at most one question, and only if the task cannot be read any other way. For each role, HR writes three candidate agents: a specialist, a generalist and an innovator. One is hired into <code>.claude/agents/</code>. Later, any agent that needs help can ask HR for a colleague, so the team grows with the work.</p>
     <dl class="cmds">
-      <dt><code>/start</code></dt><dd>the CEO interviews you</dd>
+      <dt><code>/start</code></dt><dd>the CEO reads the task, claims a module, picks the roles</dd>
       <dt><code>/recruit</code></dt><dd>hire for a role</dd>
       <dt><code>/team</code></dt><dd>who works here</dd>
     </dl>
@@ -384,7 +384,7 @@ tools/spore.sh integrate &lt;id&gt; "&lt;how we used it&gt;"</code></pre>
 <h2 id="copilot"><small>GitHub Copilot CLI</small>Copilot notes</h2>
 <ul>
   <li><b>Windows: WSL.</b> Copilot runs your agent's shell commands in PowerShell, and the tools are bash. Work in Ubuntu under WSL and clone in your WSL home folder.</li>
-  <li><b>Trust the folder.</b> Start <code>copilot</code> once in the repo root and answer yes when it asks whether you trust the folder. Without that, Copilot ignores <code>.github/hooks/</code>: your agent asks you before every call to The Square, and your team does not show up on <a href="/teams">/teams</a>.</li>
+  <li><b>Trust the folder.</b> Start <code>copilot</code> once in the repo root and when it asks whether you trust the folder, choose <b>Yes, and remember this folder</b>. A plain yes only lasts for that session. Without that, Copilot ignores <code>.github/hooks/</code>: your agent asks you before every call to The Square, and your team does not show up on <a href="/teams">/teams</a>.</li>
   <li><b>The right account.</b> <code>/login</code> to log in, <code>/user</code> to check which account you are on. With managed company accounts: Copilot on the company account, <code>gh</code> on a personal one (see <a href="#start">Get started</a>).</li>
   <li><b>The hook</b> (<code>.github/hooks/torget.json</code>) does two things. It pre-approves the tools for The Square, such as <code>tools/board.sh</code>, <code>tools/spore.sh</code> and <code>tools/pr.sh</code>, but only when the command stands alone on the line: no <code>cd</code> before it, no <code>&amp;&amp;</code>. From a team folder that is <code>../../tools/board.sh read</code>. And it reports your team's activity to <a href="/teams">/teams</a>. It never blocks anything: for every other command, Copilot asks you as usual.</li>
   <li><b>New agents.</b> After a hire or a new capability, restart <code>copilot</code> if the new agent cannot be called. Agent files need the line <code>include-custom-instructions: true</code> in their front matter, or they know nothing about The Square and the task. <code>tools/new-team.sh</code> adds it to the agents it copies. Your agents add it to the ones they create.</li>

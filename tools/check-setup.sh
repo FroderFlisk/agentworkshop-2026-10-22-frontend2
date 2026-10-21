@@ -55,8 +55,8 @@ else:
 PY
     case "$(python3 -c "$TILLIT" "$(pwd)" 2>/dev/null)" in
       yes) ja "the repo is trusted in Copilot (the hooks in .github/hooks are read)";;
-      no)  nej "the repo is not trusted in Copilot" "start copilot once here in the repo root and answer yes when it asks whether you trust the folder" "copilot-trust";;
-      *)   echo "  ?        could not tell whether the repo is trusted in Copilot. Start copilot once here in the repo root and answer yes to the trust question.";;
+      no)  nej "the repo is not trusted in Copilot" "start copilot once here in the repo root and choose \"Yes, and remember this folder\" when it asks whether you trust the folder" "copilot-trust";;
+      *)   echo "  ?        could not tell whether the repo is trusted in Copilot. Start copilot once here in the repo root and choose \"Yes, and remember this folder\" at the trust question.";;
     esac
   fi
   # A real question, not just that the program exists: it catches logged out, a policy switched off by the

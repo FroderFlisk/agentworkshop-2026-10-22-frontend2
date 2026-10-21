@@ -14,7 +14,7 @@ team at work.
 ```bash
 git clone https://github.com/fltman/agentworkshop-2026-10-22-frontend2.git
 cd agentworkshop-2026-10-22-frontend2
-copilot                       # trust the folder, /login, /user, then exit
+copilot                       # trust the folder (and remember it), /login, /user, then exit
 tools/check-setup.sh          # your agent CLI, git, curl, gh LOGGED IN, and that The Square answers
 ```
 
@@ -25,7 +25,7 @@ whether you are ready. Stuck? Paste that line in `#help`.
 **On Windows, do everything in WSL** (Ubuntu), not in PowerShell or Git Bash, and clone in your WSL home folder.
 Copilot runs your agent's shell commands in PowerShell, and every tool in `tools/` is a bash script.
 
-**Trust the folder.** Start `copilot` once in the repo root and answer yes when it asks whether you trust the
+**Trust the folder.** Start `copilot` once in the repo root and choose **Yes, and remember this folder** when it asks whether you trust the
 folder. Only then does Copilot read the repo's hooks in `.github/hooks/`: they let your agent use The Square without
 asking you every time, and they show your team's work on `/teams`.
 
@@ -111,7 +111,7 @@ or follow the manual steps it prints.
 
 | Lab | How the team works | Commands | Pick it if |
 |---|---|---|---|
-| **agent-factory** | A company. The CEO interviews you and decides the roles. HR writes three candidates per role (specialist, generalist, innovator), one is hired. Any agent can ask HR for a colleague. | `/start`, `/recruit`, `/team` | you think in roles and want someone in charge |
+| **agent-factory** | A company. The CEO reads the group's task, claims a module and decides the roles. HR writes three candidates per role (specialist, generalist, innovator), one is hired. Any agent can ask HR for a colleague. | `/start`, `/recruit`, `/team` | you think in roles and want someone in charge |
 | **hive** | No roles. Capabilities spawn when needed, gain energy when used, lose it when idle, dissolve below 10, split above 90, merge when they overlap. | `/awaken`, `/spawn`, `/status`, `/evolve`, `/dissolve` | the work changes shape and the team should too |
 | **flux** | Evolution. Genomes of personality and skill genes form timelines that compete. Winners are kept, losers go to the graveyard with the context they died in. | `/explore "..."`, `/evolve`, `/status`, `/cross`, `/select` | the problem has several plausible solutions |
 
