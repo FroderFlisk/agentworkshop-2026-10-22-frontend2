@@ -132,9 +132,23 @@ case "$cmd" in
         *) echo "  shared   $f"; needs_ok=1;;
       esac
     done < <(files_of "$nr")
-    # secrets in the diff
-    if gh pr diff "$nr" -R "$REPO" | grep -E '^\+' | grep -qE 'sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[bp]-|-----BEGIN [A-Z ]*PRIVATE KEY|OPENROUTER_API_KEY=|ANTHROPIC_API_KEY='; then
+    # secrets in the diff. The added lines are read once into a variable and searched with here-strings: a
+    # "grep | grep -q" under pipefail can report a miss when the last grep exits early.
+    added="$(gh pr diff "$nr" -R "$REPO" | grep -E '^\+' || true)"
+    if grep -qE 'sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[bp]-|-----BEGIN [A-Z ]*PRIVATE KEY|OPENROUTER_API_KEY=|ANTHROPIC_API_KEY=' <<<"$added"; then
       echo "  SECRET in the diff"; bad=1
+    fi
+    # keys in a query or an XML login (Trafiklab, Trafikverket and similar hex keys)
+    if grep -qiE 'authenticationkey="[0-9a-f]{20,}|[?&](key|apikey|api_key|accessid)=[0-9a-f-]{20,}' <<<"$added"; then
+      echo "  SECRET in the diff (an API key in a URL or a login element)"; bad=1
+    fi
+    # keys the lead handed out in the room: one value per line in a file that only exists on the lead's computer
+    secrets_file="${RELEASE_SECRETS:-$HOME/.config/workshopladan/secrets.txt}"
+    if [ -s "$secrets_file" ]; then
+      known="$(grep -vE '^[[:space:]]*(#|$)' "$secrets_file" || true)"
+      if [ -n "$known" ] && grep -qF -- "$known" <<<"$added"; then
+        echo "  SECRET in the diff (a key the lead handed out)"; bad=1
+      fi
     fi
     # server touched → tests
     if files_of "$nr" | grep -q '^board/'; then

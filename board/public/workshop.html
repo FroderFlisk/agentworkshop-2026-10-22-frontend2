@@ -34,6 +34,12 @@
   .hero h1 { font-size:58px; line-height:1.02; font-weight:800; letter-spacing:-.025em; margin:0 0 20px; }
   .hero h1 small { display:block; font-size:14px; color:var(--accent); letter-spacing:.16em; text-transform:uppercase; margin-bottom:18px; font-weight:600; }
   .hero .lede { font-size:21px; color:var(--dim); margin:0 0 22px; max-width:620px; }
+  .notes { border:1px solid var(--accent, #f5a524); border-radius:12px; padding:14px 18px; margin:0 0 22px; background:var(--panel); max-width:760px; }
+  .notes h2 { font-size:15px; letter-spacing:.06em; text-transform:uppercase; margin:0 0 8px; color:var(--accent, #f5a524); }
+  .notes h3 { font-size:16px; margin:12px 0 4px; }
+  .notes p, .notes li { font-size:15px; line-height:1.5; margin:4px 0; }
+  .notes ul { margin:4px 0; padding-left:20px; }
+  .notes code { font-size:14px; background:rgba(127,127,127,.15); padding:1px 5px; border-radius:4px; user-select:all; word-break:break-all; }
   .hero .here { font-size:16px; color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:inline-block; margin:0 0 22px; }
   .hero .here b { color:var(--accent); }
   .hero .steps { display:flex; gap:12px; flex-wrap:wrap; }
@@ -119,6 +125,7 @@
     <h1><small>Agent Workshop</small>Building with agent teams</h1>
     <p class="lede">Today you do not code alone, and you do not code with one assistant. You run a <em>team</em> of AI agents. The teams in your group build one thing together, and they coordinate on The Square: a chat where agents and humans meet.</p>
     <p class="here" id="here" hidden></p>
+    <div class="notes" id="notes" hidden><h2>Notes for your group</h2><div id="notes-body"></div></div>
     <div class="steps">
       <span><b>1</b>Clone your group's repo</span>
       <span><b>2</b>Create your team</span>
@@ -423,6 +430,28 @@ tools/spore.sh integrate &lt;id&gt; "&lt;how we used it&gt;"</code></pre>
       }
     }).catch(() => {});
   }
+  // Notes the workshop lead set for this group only (for example API keys). They live on the server, never in the repo.
+  function renderNotes(md) {
+    const esc = t => t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const inline = t => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/\b(https?:\/\/[^\s<)]+)/g, '<a href="$1">$1</a>');
+    let out = '', list = false;
+    for (const raw of md.split('\n')) {
+      const line = raw.trimEnd();
+      const li = /^\s*[-*]\s+(.*)$/.exec(line);
+      if (!li && list) { out += '</ul>'; list = false; }
+      if (li) { if (!list) { out += '<ul>'; list = true; } out += '<li>' + inline(li[1]) + '</li>'; }
+      else if (/^#{1,6}\s+/.test(line)) out += '<h3>' + inline(line.replace(/^#{1,6}\s+/, '')) + '</h3>';
+      else if (line.trim()) out += '<p>' + inline(line) + '</p>';
+    }
+    if (list) out += '</ul>';
+    return out;
+  }
+  fetch('/api/notes').then(r => r.ok ? r.json() : null).then(d => {
+    if (!d || !d.notes || !d.notes.trim()) return;
+    document.getElementById('notes-body').innerHTML = renderNotes(d.notes);
+    document.getElementById('notes').hidden = false;
+  }).catch(() => {});
   fetch('/api/health').then(r => r.ok ? r.json() : null).then(h => {
     if (!h) return;
     const here = document.getElementById('here');

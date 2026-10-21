@@ -38,6 +38,8 @@
 //   POST /api/hub/sporer         bara hubben, bara från samma maskin: grupperna vidarebefordrar sporer hit
 //   GET  /api/hub/grupper        bara hubben: läget i varje grupp, pollat var 10:e sekund
 //   POST /api/news  GET /api/news   tavlans tidning (POST kräver x-lead-token när LEAD_TOKEN är satt)
+//   GET  /api/notes  POST /api/notes   gruppens anteckningar på workshopsidan, t.ex. API-nycklar (POST kräver
+//                                     alltid LEAD_TOKEN och x-lead-token; filen ligger bara i DATA_DIR, aldrig i repot)
 //   GET  /api/radio              radions lista.json (grupper hämtar den från hubben)
 //   POST /api/hero/<team>        hero-bild, image/jpeg eller image/png, max 1,5 MB (x-lead-token när LEAD_TOKEN är satt)
 //
@@ -96,6 +98,7 @@ const COLONY = path.resolve(process.env.COLONY_DIR || path.join(PUBLIC, 'colony'
 const PLUGINS = path.resolve(process.env.PLUGINS_DIR || path.join(__dirname, 'plugins'));
 const RADIO = path.join(DATA_DIR, 'radio');
 const HEROES = path.join(DATA_DIR, 'heroes');
+const NOTES_FIL = path.join(DATA_DIR, 'notes.md');   // gruppens anteckningar, skrivs bara av ledaren
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -1272,6 +1275,22 @@ async function hantera(req, res) {
   }
   const nm = /^\/api\/news\/(\d+)$/.exec(p);
   if (nm && GET) { const n = nyheter.get(Number(nm[1])); return n ? json(res, 200, n) : json(res, 404, { error: `no issue #${nm[1]}` }); }
+
+  // gruppens anteckningar (t.ex. API-nycklar som bara den här gruppen behöver). Ligger i DATA_DIR och aldrig i det
+  // publika repot. Bara ledaren skriver, och bara när LEAD_TOKEN är satt: utan token skulle vem som helst kunna det.
+  if ((p === '/api/notes' || p === '/api/notes/') && GET) {
+    let notes = null, ts = null;
+    try { notes = fs.readFileSync(NOTES_FIL, 'utf8'); ts = Math.round(fs.statSync(NOTES_FIL).mtimeMs); } catch {}
+    return json(res, 200, { notes, ts });
+  }
+  if ((p === '/api/notes' || p === '/api/notes/') && POST) {
+    if (!LEAD_TOKEN || !ledarToken(req)) return json(res, 403, { error: 'Only the workshop lead can set the group notes (x-lead-token).' });
+    let buf; try { buf = await readBody(req, 20 * 1024); } catch { return json(res, 413, { error: 'notes too long: max 20 KB' }); }
+    const text = buf.toString('utf8');
+    if (!text.trim()) { try { fs.unlinkSync(NOTES_FIL); } catch {} return json(res, 200, { ok: true, notes: null }); }
+    if (!skrivAtomiskt(NOTES_FIL, text)) return json(res, 500, { error: 'could not save the notes' });
+    return json(res, 200, { ok: true, bytes: Buffer.byteLength(text) });
+  }
 
   // radio
   if (p === '/api/radio' && GET) { const r = await radioLista(); return json(res, r.status, r.body); }

@@ -477,6 +477,14 @@ try {
   assert.equal((await postJson(G.B, '/api/news', { rubrik: 'x' })).status, 403);
   x = await postJson(G.B, '/api/news', { rubrik: 'BackEnd at noon' }, { 'x-lead-token': LEAD }); assert.equal(x.status, 201);
   assert.equal((await kanal(G.B, 'square')).at(-1).text, 'News #1: BackEnd at noon (https://backend.example.com/news)'); ok('POST /api/news kräver nyckeln; länken använder PUBLIC_URL');
+  // gruppens anteckningar (nycklar på workshopsidan)
+  assert.deepEqual((await hamta(G.B, '/api/notes')).json, { notes: null, ts: null }); ok('GET /api/notes utan anteckningar: null');
+  assert.equal((await hamta(G.B, '/api/notes', { method: 'POST', headers: { 'content-type': 'text/markdown' }, body: '## Keys' })).status, 403);
+  assert.equal((await hamta(G.B, '/api/notes', { method: 'POST', headers: { 'content-type': 'text/markdown', 'x-lead-token': 'fel' }, body: '## Keys' })).status, 403);
+  x = await hamta(G.B, '/api/notes', { method: 'POST', headers: { 'content-type': 'text/markdown', 'x-lead-token': LEAD }, body: '## Your keys\n- ResRobot: `abc123`\n' });
+  assert.equal(x.status, 200); assert.equal((await hamta(G.B, '/api/notes')).json.notes, '## Your keys\n- ResRobot: `abc123`\n'); ok('POST /api/notes kräver nyckeln, GET visar texten');
+  assert.equal((await hamta(G.B, '/api/notes', { method: 'POST', headers: { 'x-lead-token': LEAD }, body: 'x'.repeat(21 * 1024) })).status, 413); ok('för långa anteckningar → 413');
+  await hamta(G.B, '/api/notes', { method: 'POST', headers: { 'x-lead-token': LEAD }, body: '  ' }); assert.equal((await hamta(G.B, '/api/notes')).json.notes, null); ok('tom POST tar bort anteckningarna');
   assert.equal((await hamta(G.B, '/api/hero/tomhol', { method: 'POST', headers: { 'content-type': 'image/png' }, body: PNG })).status, 403);
   assert.equal((await hamta(G.B, '/api/hero/tomhol', { method: 'POST', headers: { 'content-type': 'image/png', 'x-lead-token': LEAD }, body: PNG })).status, 201); ok('POST /api/hero kräver nyckeln');
 
