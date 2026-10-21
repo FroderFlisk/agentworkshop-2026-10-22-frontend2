@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Square Radio</title>
+<!-- One station for the whole workshop. Music, and between the songs a short news bulletin about all the
+     groups, written and recorded on the workshop lead's computer. GET /api/radio is the playlist
+     (music, bulletins, sting, special); on a group's Square it is proxied from the hub. -->
+<style>
+  :root { --bg:#0b0d10; --panel:#13171d; --line:#232932; --fg:#e8eaed; --dim:#8a929d; --amber:#ffb454; --green:#5fd7a7; --red:#ff4d4d; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; color:var(--fg); background:radial-gradient(ellipse at 50% -10%, #2a1d12 0%, #15110e 35%, var(--bg) 75%) fixed var(--bg); font:17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 22px 60px; }
+  .station { display:flex; align-items:center; gap:20px; }
+  .dial { flex:none; width:96px; height:96px; border-radius:50%; border:3px solid var(--amber); display:grid; place-items:center; font:700 26px/1 ui-monospace, Menlo, monospace; color:var(--amber); box-shadow:0 0 40px rgba(255,180,84,.25), inset 0 0 20px rgba(255,180,84,.12); }
+  .on .dial { box-shadow:0 0 60px rgba(255,180,84,.5), inset 0 0 24px rgba(255,180,84,.25); }
+  h1 { margin:0; font-size:42px; letter-spacing:.06em; text-transform:uppercase; color:var(--amber); line-height:1.05; }
+  .tag { color:var(--dim); margin-top:4px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#555; margin-right:8px; vertical-align:middle; }
+  .on .dot { background:var(--red); box-shadow:0 0 12px var(--red); animation:blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity:.35; } }
+  .controls { margin:24px 0 18px; display:flex; gap:12px; flex-wrap:wrap; }
+  button { font:inherit; font-weight:700; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:10px; }
+  .power { background:var(--amber); color:#0b0d10; border:0; padding:14px 26px; font-size:19px; letter-spacing:.02em; }
+  .power:disabled { opacity:.45; cursor:default; }
+  .on .power { background:var(--panel); color:var(--fg); border:1px solid var(--line); }
+  .ghost { background:transparent; color:var(--fg); border:1px solid var(--line); padding:10px 18px; }
+  .ghost:hover { border-color:var(--amber); }
+  svg { width:18px; height:18px; fill:currentColor; flex:none; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:14px 0; }
+  .kicker { color:var(--dim); font:12px/1.4 ui-monospace, Menlo, monospace; text-transform:uppercase; letter-spacing:.12em; }
+  .now .title { font-size:26px; margin-top:4px; line-height:1.25; }
+  .bars { display:inline-flex; gap:3px; align-items:flex-end; height:16px; margin-right:8px; vertical-align:-2px; }
+  .bars i { width:3px; height:4px; background:var(--amber); }
+  .playing .bars i { animation:eq .9s ease-in-out infinite; }
+  .playing .bars i:nth-child(2) { animation-delay:.2s; } .playing .bars i:nth-child(3) { animation-delay:.45s; } .playing .bars i:nth-child(4) { animation-delay:.1s; }
+  @keyframes eq { 0%,100% { height:4px; } 50% { height:16px; } }
+  .progress { height:4px; background:var(--line); border-radius:2px; margin-top:14px; overflow:hidden; }
+  .progress div { height:100%; width:0; background:var(--amber); transition:width .5s linear; }
+  .script { border-left:4px solid var(--green); }
+  .script .kicker { color:var(--green); }
+  .script .text { font-size:21px; line-height:1.55; margin-top:6px; white-space:pre-wrap; }
+  .special { border-color:var(--amber); background:linear-gradient(180deg, rgba(255,180,84,.08), rgba(255,180,84,.02)); }
+  .special .kicker { color:var(--amber); }
+  .special .title { font-size:22px; margin:4px 0 12px; }
+  h2 { font:12px/1.4 ui-monospace, Menlo, monospace; text-transform:uppercase; letter-spacing:.12em; color:var(--dim); margin:28px 0 8px; font-weight:400; }
+  .row { display:grid; grid-template-columns:58px 1fr auto; gap:12px; align-items:start; padding:10px 0; border-top:1px solid var(--line); }
+  .row time { color:var(--dim); font:14px/1.6 ui-monospace, Menlo, monospace; }
+  .row .t { color:#c9ced6; }
+  .row button { background:none; border:1px solid var(--line); color:var(--fg); padding:4px 12px; font-size:13px; font-weight:600; }
+  .row button:hover { border-color:var(--amber); }
+  .how { margin-top:30px; color:var(--dim); border-top:1px solid var(--line); padding-top:12px; }
+  .how b { color:var(--fg); font-weight:600; font-family:ui-monospace, Menlo, monospace; }
+  @media (max-width:560px) { h1 { font-size:30px; } .dial { width:70px; height:70px; font-size:19px; } .now .title { font-size:21px; } .row { grid-template-columns:48px 1fr; } .row button { grid-column:2; justify-self:start; } }
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<div class="wrap" id="wrap">
+  <header class="station">
+    <div class="dial">99.3</div>
+    <div>
+      <h1>Square Radio</h1>
+      <div class="tag"><span class="dot"></span><span id="status">Off air</span> · the station of the whole workshop</div>
+    </div>
+  </header>
+  <div class="controls">
+    <button class="power" id="power" disabled><svg viewBox="0 0 24 24" id="icon"><path d="M7 4.5v15l13-7.5z"/></svg><span id="powerText">Turn on the radio</span></button>
+  </div>
+  <div class="card now" id="now">
+    <div class="kicker"><span class="bars"><i></i><i></i><i></i><i></i></span><span id="what">The radio is off</span></div>
+    <div class="title" id="title">Loading the station …</div>
+    <div class="progress"><div id="prog"></div></div>
+  </div>
+  <div class="card script" id="scriptBox" hidden><div class="kicker" id="scriptHead">Latest bulletin</div><div class="text" id="scriptText"></div></div>
+  <div class="card special" id="specialBox" hidden>
+    <div class="kicker">Special</div>
+    <div class="title" id="specialTitle"></div>
+    <button class="ghost" id="specialBtn"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>Play the special</button>
+  </div>
+  <section id="earlierBox" hidden><h2>Earlier bulletins</h2><div id="earlier"></div></section>
+  <p class="how">Send a greeting to the radio: write <b>@radio &lt;your message&gt;</b> on The Square. Now and then one is read on air.</p>
+</div>
+<audio id="player" preload="auto"></audio>
+<script src="/nav.js" defer></script>
+<script>
+// Autoplay is blocked in every browser, so nothing plays until someone presses the button.
+// Between songs: if a new bulletin has arrived, the sting plays and then the bulletin. Otherwise the next song.
+const $ = id => document.getElementById(id);
+const player = $('player');
+const PLAY = 'M7 4.5v15l13-7.5z', STOP = 'M6 5h4v14H6zM14 5h4v14h-4z';
+const OFF = 'Press the button to listen. Music, with news from all the groups in between.';
+const clock = ts => ts ? new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+let list = { musik: [], sandningar: [] }, on = false, order = [], queue = [], step = null, first = true, played = 0;
+try { played = Number(localStorage.getItem('radio-played') || 0); } catch (e) {}
+
+function show(what, title) { $('what').textContent = what; $('title').textContent = title; }
+function showScript(head, text) { $('scriptBox').hidden = !text; $('scriptHead').textContent = head; $('scriptText').textContent = text || ''; }
+function setOn(v) {
+  on = v;
+  $('wrap').classList.toggle('on', on);
+  $('powerText').textContent = on ? 'Turn off' : 'Turn on the radio';
+  $('icon').firstChild.setAttribute('d', on ? STOP : PLAY);
+  $('status').textContent = on ? 'On air' : 'Off air';
+  if (!on) { player.pause(); $('now').classList.remove('playing'); show('The radio is off', OFF); latestScript(); }
+}
+function latestScript() {
+  const s = list.sandningar || [];
+  if (s.length) { const x = s[s.length - 1]; showScript('Latest bulletin · ' + clock(x.ts), x.manus); }
+}
+
+async function fetchList() {
+  try {
+    const r = await fetch('/api/radio', { cache: 'no-store' });
+    const j = r.ok ? await r.json() : {};
+    list = Object.assign({ musik: [], sandningar: [] }, j && typeof j === 'object' ? j : {});
+  } catch (e) { return; }
+  const s = (list.sandningar || []).filter(x => x && x.manus);
+  const hasSound = (list.musik || []).length || s.some(x => x.url);
+  $('power').disabled = !hasSound;
+  if (!on) { if (hasSound) show('The radio is off', OFF); else show('Not on air yet', 'The station starts during the day. ' + OFF.split('. ')[1]); }
+  if (list.special && list.special.url) {
+    $('specialBox').hidden = false;
+    $('specialTitle').textContent = (list.special.rubrik || 'Special') + (list.special.sek ? ' · ' + Math.max(1, Math.round(list.special.sek / 60)) + ' min' : '') + (list.special.ts ? ' · ' + clock(list.special.ts) : '');
+  } else $('specialBox').hidden = true;
+  if (s.length) {
+    const latest = s[s.length - 1];
+    // The first time: only the latest bulletin is queued, not every old one in a row.
+    // A stored number from another day (the list starts over at 1) does not count.
+    if (first) { const n = latest.nummer || 0; if (!(played >= n - 1 && played <= n)) played = n - 1; first = false; }
+    for (const x of s) if (x.url && (x.nummer || 0) > played && !queue.some(q => q.nummer === x.nummer)) queue.push(x);
+    if (!on || step === 'musik') latestScript();
+    const box = $('earlier'); box.textContent = '';
+    for (const x of s.slice(0, -1).reverse().slice(0, 8)) {
+      const row = document.createElement('div'); row.className = 'row';
+      const t = document.createElement('time'); t.textContent = clock(x.ts);
+      const d = document.createElement('div'); d.className = 't'; d.textContent = x.manus;
+      row.append(t, d);
+      if (x.url) { const b = document.createElement('button'); b.textContent = 'Play'; b.onclick = () => playBulletin(x); row.append(b); }
+      box.append(row);
+    }
+    $('earlierBox').hidden = s.length < 2;
+  } else if (first) first = false;
+}
+
+function nextSong() {
+  const m = list.musik || [];
+  if (!m.length) return null;
+  if (!order.length) order = m.map((_, i) => i).sort(() => Math.random() - .5);
+  return m[order.shift()];
+}
+function play(url, what, title) {
+  show(what, title);
+  $('prog').style.width = '0';
+  player.src = url;
+  player.play().catch(() => setTimeout(next, 1500));
+}
+function playBulletin(x) {
+  if (!on) setOn(true);
+  step = 'news';
+  played = Math.max(played, x.nummer || 0);
+  try { localStorage.setItem('radio-played', played); } catch (e) {}
+  queue = queue.filter(q => q.nummer !== x.nummer);
+  showScript('On air now · bulletin from ' + clock(x.ts), x.manus);
+  play(x.url, 'News from the groups', 'Bulletin from ' + clock(x.ts));
+}
+function next() {
+  if (!on) return;
+  if (step === 'sting' && queue.length) return playBulletin(queue.shift());
+  if (queue.length && step !== 'news') {
+    if (list.sting) { step = 'sting'; return play(list.sting, 'Square Radio 99.3', 'The news is coming up'); }
+    return playBulletin(queue.shift());
+  }
+  const song = nextSong(); step = 'musik';
+  if (song) { latestScript(); play(song.url, 'Music', song.titel || 'Music'); }
+  else { show('Waiting for the next bulletin', 'No music on the station yet.'); setTimeout(next, 10000); }
+}
+player.addEventListener('ended', next);
+player.addEventListener('error', () => { if (on) setTimeout(next, 1500); });
+player.addEventListener('playing', () => $('now').classList.add('playing'));
+player.addEventListener('pause', () => $('now').classList.remove('playing'));
+player.addEventListener('timeupdate', () => { if (player.duration) $('prog').style.width = (100 * player.currentTime / player.duration) + '%'; });
+$('power').onclick = () => { if (on) setOn(false); else { setOn(true); step = null; next(); } };
+// The special only plays on request, and interrupts whatever is playing. Then the music continues.
+$('specialBtn').onclick = () => {
+  if (!list.special || !list.special.url) return;
+  if (!on) setOn(true);
+  step = 'news';
+  showScript(list.special.rubrik || 'Special', list.special.manus);
+  play(list.special.url, 'Special', list.special.rubrik || 'Special');
+};
+fetchList();
+setInterval(fetchList, 20000);
+</script>
+</body>
+</html>

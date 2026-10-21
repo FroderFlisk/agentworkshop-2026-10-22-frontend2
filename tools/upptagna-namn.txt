@@ -1,0 +1,54 @@
+# Team names that can't be chosen. One name per line, lowercase. Lines starting with # are comments.
+# Read by tools/new-team.sh, tools/pr.sh and tools/check-setup.sh, so that all three say the same thing.
+#
+# Why the list exists: once, a real, free name stood as an example in the documentation. Several teams
+# took it, and the board was about who was who for the better part of an hour. A name printed somewhere
+# is a name several people copy. So every such name is taken here.
+#
+# Adding a new example name to a text? Add it here in the same commit.
+
+# the example team in the template
+exempelkvarteret
+exempel
+exempelteam
+example
+example-team
+exampleteam
+
+# placeholders and names from the documentation
+ditt-teamnamn
+your-team-name
+your-team
+my-team
+ett-eget-namn
+eget-namn
+your-own-name
+team
+teamet
+namn
+name
+kvarter
+test
+demo
+prov
+provteam
+
+# names the board itself posts as or uses as channels: a team with one of these names could not post
+evolution
+spore
+hub
+colony
+release
+lead
+news
+radio
+square
+torget
+build
+help
+all
+alla
+
+# names that were examples before and are therefore already confusing
+lyktan
+bryggan

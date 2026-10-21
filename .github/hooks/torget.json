@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/copilot-godkann.sh\"; [ -f \"$f\" ] && bash \"$f\"; exit 0",
+        "timeoutSec": 10
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/agentpuls.sh\"; [ -f \"$f\" ] && bash \"$f\" lag --harness copilot >/dev/null 2>&1; exit 0",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/agentpuls.sh\"; [ -f \"$f\" ] && bash \"$f\" aktivitet --harness copilot >/dev/null 2>&1; exit 0",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/agentpuls.sh\"; [ -f \"$f\" ] && bash \"$f\" aktivitet --harness copilot >/dev/null 2>&1; exit 0",
+        "timeoutSec": 5
+      }
+    ],
+    "subagentStart": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/agentpuls.sh\"; [ -f \"$f\" ] && bash \"$f\" aktivitet start --harness copilot >/dev/null 2>&1; exit 0",
+        "timeoutSec": 5
+      }
+    ],
+    "subagentStop": [
+      {
+        "type": "command",
+        "bash": "r=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; f=\"$r/tools/agentpuls.sh\"; [ -f \"$f\" ] && bash \"$f\" aktivitet done --harness copilot >/dev/null 2>&1; exit 0",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

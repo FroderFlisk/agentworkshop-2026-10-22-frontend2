@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All groups</title>
+<style>
+  :root {
+    --bg:#070b16; --bg2:#0b1222; --panel:#0e1628; --line:#1c2a44; --fg:#e9eef7; --dim:#8a98b3;
+    --amber:#ffb454; --mint:#5fd7a7; --sky:#7cc4ff; --lav:#c3a6ff; --gold:#ffd479; --void:#9a86c9; --rose:#ff7a85;
+  }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--fg);
+    background: radial-gradient(1100px 700px at 20% -10%, #13224488, transparent 70%),
+                radial-gradient(900px 640px at 80% 115%, #0f2b2a66, transparent 70%), var(--bg);
+    font:15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color:inherit; }
+  .head { flex:none; display:flex; align-items:center; gap:16px; padding:9px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .head h1 { font-size:17px; margin:0; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); font-weight:700; }
+  .head .plenary { font-size:14px; font-weight:600; color:var(--fg); text-decoration:none; border:1px solid #ffb45488; background:#ffb45414; padding:4px 12px; border-radius:999px; }
+  .head .plenary:hover { background:#ffb45430; }
+  .head .n { margin-left:auto; color:var(--dim); font-size:14px; }
+  .head .n b { color:var(--fg); font-weight:600; }
+  .head .n b.warn { color:var(--amber); }
+
+  .wrap { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) clamp(300px, 24vw, 420px); }
+  #arena { position:relative; min-height:0; padding:16px; display:grid; grid-template-rows:minmax(0,1fr) var(--band) minmax(0,1fr); --band:clamp(84px, 14vh, 150px); }
+  #arena.one { grid-template-rows:minmax(0,1fr) var(--band); }
+  .row { display:grid; gap:16px; min-height:0; position:relative; z-index:2; }
+  .row[hidden] { display:none; }
+  .band { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; pointer-events:none; }
+  .band .lbl { font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); font-weight:700; background:#070b16cc; padding:1px 8px; border-radius:6px; }
+  .band .tick { margin-top:6px; font-size:16px; color:#dfe6f2; max-width:80%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#070b16cc; padding:2px 10px; border-radius:8px; }
+  .band .tick b { color:#fff; }
+  #arcs { position:absolute; left:0; top:0; width:100%; height:100%; z-index:1; pointer-events:none; overflow:visible; }
+  .arc { fill:none; stroke-opacity:.42; stroke-linecap:round; }
+  .trav { filter:url(#glow); }
+  .rip { fill:none; stroke-width:2; animation:rip 1.3s ease-out forwards; }
+  @keyframes rip { from { r:5px; opacity:.9; } to { r:46px; opacity:0; } }
+  .port { stroke:#070b16; stroke-width:2; }
+
+  .gp { position:relative; min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:6px; padding:12px 14px 10px; border-radius:14px;
+        background:linear-gradient(180deg, #111b31, #0c1426); border:1px solid var(--line); border-top:3px solid var(--gc); box-shadow:0 10px 30px #00000055; }
+  .gp > * { flex:none; }
+  .gp header { display:flex; align-items:center; gap:10px; }
+  .gp .nm { font-size:24px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; text-decoration:none; }
+  .gp .nm:hover { text-decoration:underline; }
+  .gp .ok { margin-left:auto; flex:none; font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; padding:2px 8px; border-radius:999px; color:var(--mint); border:1px solid #5fd7a766; background:#5fd7a714; }
+  .gp .url { font-size:13px; color:var(--dim); text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:-4px; }
+  .gp .nums { display:flex; gap:16px; font-size:15px; color:var(--dim); }
+  .gp .nums b { color:var(--fg); font-size:20px; font-weight:700; margin-right:3px; }
+  .gp .act { font-size:14px; color:var(--dim); }
+  .gp .act b { font-weight:600; color:var(--fg); }
+  .gp .act.fresh b { color:var(--mint); }
+  .gp .act.quiet b { color:var(--amber); }
+  .gp .act.cold b { color:var(--rose); }
+  .gp .help { font-size:14px; color:var(--dim); }
+  .gp .help.on { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; font-size:16px; font-weight:700; color:#1a0f02; background:var(--amber); padding:4px 10px; border-radius:8px; align-self:flex-start; }
+  .gp.asks { border-color:#ffb45499; box-shadow:0 0 0 1px #ffb45455, 0 0 26px #ffb45433; animation:ask 2.4s ease-in-out infinite; }
+  @keyframes ask { 50% { box-shadow:0 0 0 1px #ffb45433, 0 0 8px #ffb45411; } }
+  .gp .tms { font-size:13px; color:#aab6c9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gp ol { list-style:none; margin:2px 0 0; padding:6px 0 0; border-top:1px solid #1a2741; flex:1 1 0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:3px; }
+  .gp li { font-size:13.5px; color:#cfd8e6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gp li time { color:var(--dim); margin-right:6px; font-size:12px; }
+  .gp li.none { color:var(--dim); }
+  .gp footer { display:flex; gap:12px; font-size:13px; flex:none; }
+  .gp footer a { color:var(--dim); text-decoration:none; }
+  .gp footer a:hover { color:var(--fg); }
+  .gp.down { border-top-color:var(--rose); opacity:.78; }
+  .gp.down .ok { color:var(--rose); border-color:#ff7a8577; background:#ff7a8514; }
+  .gp.new { animation:pin .8s ease-out; }
+  @keyframes pin { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  #empty { position:absolute; inset:0; display:grid; place-items:center; padding:24px; z-index:3; }
+  #empty[hidden] { display:none; }
+  #empty .box { max-width:680px; text-align:center; color:var(--dim); font-size:18px; line-height:1.55; }
+  #empty h2 { color:var(--fg); font-size:28px; margin:0 0 12px; }
+  #empty code { color:var(--fg); }
+
+  aside { border-left:1px solid var(--line); display:flex; flex-direction:column; min-height:0; background:#0a101dcc; }
+  aside h2 { margin:0; padding:12px 16px 10px; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700; border-bottom:1px solid var(--line); }
+  #feed { flex:1; overflow:hidden; padding:0 16px; }
+  .fi { padding:10px 0 11px; border-bottom:1px solid #16213a; }
+  .fi.new { animation:fin 1.2s ease-out; }
+  @keyframes fin { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
+  .fm { display:flex; gap:8px; align-items:center; font-size:12px; color:var(--dim); }
+  .tag { color:var(--c); border:1px solid color-mix(in srgb, var(--c) 55%, transparent); background:color-mix(in srgb, var(--c) 10%, transparent); padding:0 7px; border-radius:999px; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700; }
+  .chip { display:inline-flex; align-items:center; gap:5px; color:#c8d3e6; font-weight:600; }
+  .chip i { width:9px; height:9px; border-radius:50%; background:var(--gc); display:inline-block; }
+  .fm .chips { margin-left:auto; display:flex; gap:8px; }
+  .ft { font-size:15.5px; margin-top:4px; color:#dfe6f2; overflow-wrap:anywhere; }
+  .ft b { color:#fff; font-weight:650; }
+  .fs { font-size:13.5px; color:var(--dim); margin-top:3px; overflow-wrap:anywhere; }
+  .fempty { color:var(--dim); padding:18px 0; font-size:15px; line-height:1.5; }
+
+  @media (max-height:820px) {
+    .gp { gap:4px; padding:10px 12px 8px; }
+    .gp .nm { font-size:21px; }
+    .gp .url, .gp .tms { display:none; }
+    .gp .nums b { font-size:17px; }
+    .gp .help.on { font-size:14px; padding:2px 8px; }
+  }
+  @media (max-width:1100px) {
+    body { height:auto; overflow:auto; }
+    .wrap { grid-template-columns:1fr; }
+    #arena { grid-template-rows:auto var(--band) auto; }
+    .row { grid-template-columns:1fr !important; }
+    .gp { min-height:280px; }
+    aside { border-left:0; border-top:1px solid var(--line); min-height:50vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gp.asks, .gp.new, .fi.new { animation:none; }
+  }
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<div class="head">
+  <h1>All groups</h1>
+  <a class="plenary" href="/square">Plenary Square &rarr;</a>
+  <span class="n" id="stats"></span>
+</div>
+<div class="wrap">
+  <div id="arena">
+    <div class="row" id="top"></div>
+    <div class="band" id="band"><span class="lbl">Spores between groups</span><span class="tick" id="tick">Nothing has crossed between groups yet.</span></div>
+    <div class="row" id="bot"></div>
+    <svg id="arcs" xmlns="http://www.w3.org/2000/svg">
+      <defs><filter id="glow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <g id="L-arcs"></g><g id="L-ports"></g><g id="L-fx"></g>
+    </svg>
+    <div id="empty" hidden><div class="box">
+      <h2>No groups yet</h2>
+      <p>This is the hub's overview of every group in the workshop. It fills in when the hub is started with <code>HUB=1</code> and the list of groups in <code>GRUPPER</code>, and the groups' servers answer.</p>
+    </div></div>
+  </div>
+  <aside><h2>Latest from all groups</h2><div id="feed"></div></aside>
+</div>
+<script src="/nav.js" defer></script>
+<script>
+'use strict';
+// The hub's overview: one panel per group, spores travelling between groups, and one feed for all.
+// Data (polled, nothing is written from this page):
+//   GET /api/hub/grupper  [{id, namn, url, ok, messages, teams, senaste_ts, evolution, sporer, help_obesvarade}]
+//   GET /api/sporer       every group's spores, each with integrerad:[{team, hur, ts, grupp}]
+//   GET /api/health       `startad` (the page reloads itself after a deploy)
+
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const mq = matchMedia('(prefers-reduced-motion: reduce)');
+let calm = mq.matches;
+if (mq.addEventListener) mq.addEventListener('change', e => { calm = e.matches; });
+const tsOf = v => typeof v === 'number' ? v : (Date.parse(v) || 0);
+const hhmm = ts => { const d = new Date(ts); return ts && isFinite(d) ? d.toTimeString().slice(0, 5) : ''; };
+function ago(ms) { const s = Math.max(0, Math.round(ms / 1000)); if (s < 60) return s + ' s'; const m = Math.round(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
+const short = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+const PALETTE = ['#ffb454', '#5fd7a7', '#7cc4ff', '#c3a6ff', '#ff8f8f', '#e6d36a', '#6fe3e3', '#f59ad6'];
+const EV = {
+  'team.ny':['new team', 'var(--mint)'], 'agent.ny':['new agent', 'var(--sky)'], 'agent.borta':['left', 'var(--void)'],
+  'kandidat.ny':['candidate', 'var(--sky)'], 'formaga.ny':['spawned', 'var(--amber)'], 'formaga.upplost':['dissolved', 'var(--void)'],
+  'formaga.borta':['removed', 'var(--void)'], 'tidslinje.ny':['timeline', 'var(--lav)'], 'vinnare.ny':['winner', 'var(--gold)'],
+  'kyrkogard.ny':['graveyard', 'var(--void)'], 'logg':['log', 'var(--dim)'], 'spore':['spore', 'var(--mint)'], 'integ':['taken up', 'var(--mint)'],
+};
+const SPORE_TYPE = { tips:'tip', fallgrop:'pitfall', monster:'pattern', verktyg:'tool' };
+
+let skew = 0;
+const now = () => Date.now() + skew;
+async function api(u) {
+  const r = await fetch(u, { cache:'no-store' });
+  const d = Date.parse(r.headers.get('date') || '');
+  if (isFinite(d)) { const s = d - Date.now(); skew = Math.abs(s) > 2500 ? s : 0; }
+  if (!r.ok) throw new Error(u + ': ' + r.status);
+  return r.json();
+}
+
+let booted = false;
+let groups = [];                               // in the order the hub lists them
+const G = new Map();                           // id -> {g, el, color, port}
+const gname = id => (G.get(id) && G.get(id).g.namn) || id;
+const gcolor = id => (G.get(id) && G.get(id).color) || '#8a98b3';
+const chip = id => '<span class="chip" style="--gc:' + gcolor(id) + '"><i></i>' + esc(gname(id)) + '</span>';
+
+// ------------------------------------------------------------------ panels
+function panel(id) {
+  const el = document.createElement('section');
+  el.className = 'gp' + (booted && !calm ? ' new' : '');
+  el.innerHTML = '<header><a class="nm" target="_blank"></a><span class="ok"></span></header><a class="url" target="_blank"></a>'
+    + '<div class="nums"></div><div class="act"></div><div class="help"></div><div class="tms"></div><ol></ol>'
+    + '<footer><a class="l1" target="_blank">square</a><a class="l2" target="_blank">agent teams</a><a class="l3" target="_blank">colony</a></footer>';
+  return el;
+}
+function fill(x) {
+  const g = x.g, el = x.el, t = now();
+  const url = String(g.url || '').replace(/\/+$/, '');
+  el.style.setProperty('--gc', x.color);
+  const nm = el.querySelector('.nm'); nm.textContent = g.namn || g.id; nm.href = url || '#';
+  const u = el.querySelector('.url'); u.textContent = url.replace(/^https?:\/\//, ''); u.href = url || '#';
+  el.querySelector('.l1').href = url + '/'; el.querySelector('.l2').href = url + '/teams'; el.querySelector('.l3').href = url + '/colony';
+  el.classList.toggle('down', !g.ok);
+  el.querySelector('.ok').textContent = g.ok ? 'live' : 'down';
+  const teams = Array.isArray(g.teams) ? g.teams.map(v => typeof v === 'string' ? v : (v && (v.team || v.name || v.namn)) || '').filter(Boolean) : [];
+  const nt = Array.isArray(g.teams) ? teams.length : Number(g.teams) || 0;
+  const ns = Number(g.sporer) || 0, nmsg = Number(g.messages) || 0;
+  el.querySelector('.nums').innerHTML = '<span><b>' + nt + '</b>' + (nt === 1 ? 'team' : 'teams') + '</span><span><b>' + ns + '</b>' + (ns === 1 ? 'spore' : 'spores')
+    + '</span><span><b>' + nmsg + '</b>posts</span>';
+  const last = tsOf(g.senaste_ts), act = el.querySelector('.act');
+  if (!last) { act.className = 'act'; act.innerHTML = 'no activity yet'; }
+  else {
+    const d = t - last;
+    act.className = 'act ' + (d < 5 * 60000 ? 'fresh' : d < 15 * 60000 ? '' : d < 30 * 60000 ? 'quiet' : 'cold');
+    act.innerHTML = (g.ok ? 'last activity ' : 'unreachable, last seen ') + '<b>' + ago(d) + '</b> ago';
+  }
+  const h = Number(g.help_obesvarade) || 0, help = el.querySelector('.help');
+  help.className = 'help' + (h ? ' on' : '');
+  help.textContent = h ? h + (h === 1 ? ' unanswered question' : ' unanswered questions') + ' in #help' : 'no open questions in #help';
+  el.classList.toggle('asks', h > 0);
+  el.querySelector('.tms').textContent = teams.join(' · ');
+  const evo = (Array.isArray(g.evolution) ? g.evolution : []).slice().sort((a, b) => tsOf(b.ts) - tsOf(a.ts)).slice(0, 5);
+  el.querySelector('ol').innerHTML = evo.length
+    ? evo.map(e => '<li title="' + esc(e.text) + '"><time>' + hhmm(tsOf(e.ts)) + '</time>' + esc(e.text || [e.team, e.typ, e.namn].filter(Boolean).join(' ')) + '</li>').join('')
+    : '<li class="none">No evolution yet.</li>';
+}
+function place() {
+  const n = groups.length, arena = $('arena');
+  $('empty').hidden = n > 0;
+  const top = $('top'), bot = $('bot');
+  const k = n > 3 ? Math.ceil(n / 2) : n;
+  arena.classList.toggle('one', n <= 3);
+  bot.hidden = n <= 3;
+  top.style.gridTemplateColumns = 'repeat(' + Math.max(1, k) + ', minmax(0,1fr))';
+  bot.style.gridTemplateColumns = 'repeat(' + Math.max(1, n - k) + ', minmax(0,1fr))';
+  groups.forEach((g, i) => {
+    const x = G.get(g.id), parent = i < k ? top : bot;
+    x.row = i < k ? 0 : 1;
+    if (x.el.parentNode !== parent || parent.children[i < k ? i : i - k] !== x.el) parent.insertBefore(x.el, parent.children[i < k ? i : i - k] || null);
+  });
+  for (const [id, x] of G) if (!groups.some(g => g.id === id)) { x.el.remove(); G.delete(id); }
+  if (n <= 3) arena.appendChild($('band'));   // one row: the band sits under it
+  else arena.insertBefore($('band'), bot);
+}
+let lastGroups = 0;
+async function pollGroups() {
+  const j = await api('/api/hub/grupper');
+  const list = (Array.isArray(j) ? j : ((j && j.grupper) || [])).filter(g => g && g.id);
+  const changed = list.map(g => g.id).join() !== groups.map(g => g.id).join();
+  groups = list;
+  list.forEach((g, i) => {
+    let x = G.get(g.id);
+    if (!x) { x = { el:panel(g.id) }; G.set(g.id, x); }
+    x.g = g; x.color = PALETTE[i % PALETTE.length];
+    fill(x);
+    for (const e of g.evolution || []) addFeed({ key:'e' + g.id + ':' + (e.id != null ? e.id : e.ts + e.text), ts:tsOf(e.ts), type:e.typ || 'logg', team:e.team, text:e.text || '', groups:[g.id] });
+  });
+  if (changed) { place(); needArcs = true; }
+  lastGroups = Date.now();
+  stats();
+}
+
+// ------------------------------------------------------------------ spores between groups
+const sporeSeen = new Set(), integSeen = new Set();
+const arcs = new Map();                        // "a>b" -> {a, b, n, path}
+let needArcs = true, crossCount = 0;
+const svg = $('arcs');
+function portOf(id, other) {
+  const x = G.get(id); if (!x || !x.el.isConnected) return null;
+  const A = $('arena').getBoundingClientRect(), r = x.el.getBoundingClientRect();
+  const k = groups.length > 3 ? 1 : 0;
+  const idx = groups.findIndex(g => g.id === other), mid = (groups.length - 1) / 2;
+  const off = (idx - mid) * Math.min(14, r.width / (groups.length * 2.5));
+  const below = x.row === 0;                    // top row: port on the bottom edge; bottom row: on the top edge
+  return { x:r.left - A.left + r.width / 2 + off, y:(below ? r.bottom : r.top) - A.top, row:x.row, dir:below ? 1 : -1, k };
+}
+function arcD(a, b) {
+  const P = portOf(a, b), Q = portOf(b, a); if (!P || !Q) return '';
+  const band = $('band').getBoundingClientRect(), A = $('arena').getBoundingClientRect();
+  const ym = band.top - A.top + band.height / 2;
+  if (P.row !== Q.row) return 'M' + P.x + ',' + P.y + ' C' + P.x + ',' + ym + ' ' + Q.x + ',' + ym + ' ' + Q.x + ',' + Q.y;
+  const depth = Math.min(band.height * 0.9, 30 + Math.abs(P.x - Q.x) * 0.25) * P.dir;
+  return 'M' + P.x + ',' + P.y + ' C' + P.x + ',' + (P.y + depth) + ' ' + Q.x + ',' + (Q.y + depth) + ' ' + Q.x + ',' + Q.y;
+}
+function arc(a, b) {
+  const key = a + '>' + b;
+  let x = arcs.get(key);
+  if (!x) { x = { a, b, n:0, path:S('path', { class:'arc' }, $('L-arcs')) }; arcs.set(key, x); }
+  x.n++;
+  x.path.setAttribute('stroke', gcolor(a));
+  x.path.setAttribute('stroke-width', Math.min(6, 1.6 + Math.log2(x.n) * 1.2));
+  x.path.setAttribute('d', arcD(a, b));
+  return x;
+}
+function drawArcs() {
+  needArcs = false;
+  const A = $('arena').getBoundingClientRect();
+  svg.setAttribute('width', A.width); svg.setAttribute('height', A.height);
+  for (const x of arcs.values()) { x.path.setAttribute('stroke', gcolor(x.a)); x.path.setAttribute('d', arcD(x.a, x.b)); }
+  const L = $('L-ports'); L.innerHTML = '';
+  for (const g of groups) { const p = portOf(g.id, g.id); if (p) S('circle', { class:'port', cx:p.x, cy:p.y, r:5, fill:gcolor(g.id) }, L); }
+}
+async function pollSpores() {
+  const j = await api('/api/sporer');
+  const list = (Array.isArray(j) ? j : ((j && (j.sporer || j.spores)) || [])).slice().sort((a, b) => tsOf(a.ts) - tsOf(b.ts));
+  const fx = [];
+  let latest = null;
+  for (const s of list) {
+    if (!s || s.id == null) continue;
+    const id = String(s.id), src = s.grupp || '', title = s.titel || s.title || '';
+    if (!sporeSeen.has(id)) {
+      sporeSeen.add(id);
+      if (booted) fx.push(() => puff(src));
+      addFeed({ key:'s' + id, ts:tsOf(s.ts), type:'spore', team:s.fran, sub2:SPORE_TYPE[s.typ] || s.typ || '', groups:src ? [src] : [],
+                text:(s.fran || 'a team') + ' shared “' + title + '”', sub:short(s.lardom || s.lesson || '', 150) });
+    }
+    for (const it of s.integrerad || []) {
+      if (!it || !it.team) continue;
+      const to = it.grupp || src, k = id + '|' + to + '|' + it.team;
+      const cross = !!(src && to && to !== src && G.has(src) && G.has(to));
+      if (cross) { const t = tsOf(it.ts) || tsOf(s.ts); if (!latest || t >= latest.t) latest = { t, src, to, team:it.team, title }; }
+      if (integSeen.has(k)) continue;
+      integSeen.add(k);
+      if (cross) { crossCount++; const x = arc(src, to); if (booted) fx.push(() => travel(x.path, gcolor(src), to)); }
+      addFeed({ key:'i' + k, ts:tsOf(it.ts) || tsOf(s.ts), type:'integ', team:it.team, groups:cross ? [src, to] : (to ? [to] : []),
+                text:it.team + ' took up “' + title + '” from ' + (s.fran || 'another team'), sub:short(it.hur || it.how || '', 150) });
+    }
+  }
+  if (latest) $('tick').innerHTML = chip(latest.src) + ' &rarr; ' + chip(latest.to) + ' &nbsp;<b>' + esc(latest.team) + '</b> took up “' + esc(short(latest.title, 70)) + '”';
+  if (fx.length) { if (needArcs) drawArcs(); fx.forEach(f => f()); }
+  stats();
+}
+
+// ------------------------------------------------------------------ motion
+const moving = [];
+function ripple(x, y, color) {
+  if (calm) return;
+  const c = S('circle', { class:'rip', cx:x, cy:y, r:5, stroke:color }, $('L-fx'));
+  setTimeout(() => c.remove(), 1400);
+}
+function travel(path, color, to) {
+  if (calm || !path.getAttribute('d')) return;
+  const dots = [0, 1, 2].map(i => S('circle', { class:'trav', r:6.5 - i * 1.8, fill:'#f2fff9', opacity:1 - i * 0.3 }, $('L-fx')));
+  moving.push({ path, len:path.getTotalLength(), t0:performance.now(), dur:3000, dots, done:() => { const p = path.getPointAtLength(path.getTotalLength()); ripple(p.x, p.y, color); } });
+}
+function puff(id) {
+  const p = portOf(id, id); if (!p || calm) return;
+  ripple(p.x, p.y, gcolor(id));
+}
+function frame() {
+  requestAnimationFrame(frame);
+  if (needArcs) drawArcs();
+  for (let i = moving.length - 1; i >= 0; i--) {
+    const f = moving[i], p = Math.min(1, (performance.now() - f.t0) / f.dur);
+    f.dots.forEach((d, j) => {
+      const q = Math.max(0, p - j * 0.03), e = q < 0.5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+      const pt = f.path.getPointAtLength(e * f.len);
+      d.setAttribute('cx', pt.x.toFixed(1)); d.setAttribute('cy', pt.y.toFixed(1));
+    });
+    if (p >= 1) { f.dots.forEach(d => d.remove()); moving.splice(i, 1); f.done(); }
+  }
+}
+new ResizeObserver(() => { needArcs = true; }).observe($('arena'));
+
+// ------------------------------------------------------------------ feed and header
+const feedItems = new Map();
+let feedDirty = true, ord = 0;
+function addFeed(it) {
+  if (feedItems.has(it.key)) return;
+  it.isNew = booted; it.ord = ord++;
+  feedItems.set(it.key, it); feedDirty = true;
+}
+function boldTeam(text, who) {
+  text = String(text || '');
+  if (who && text.startsWith(who)) return '<b>' + esc(who) + '</b>' + esc(text.slice(who.length));
+  return esc(text);
+}
+function renderFeed() {
+  if (!feedDirty) return;
+  feedDirty = false;
+  const list = [...feedItems.values()].sort((a, b) => (b.ts - a.ts) || (b.ord - a.ord));
+  if (list.length > 500) for (const it of list.slice(500)) feedItems.delete(it.key);
+  const box = $('feed');
+  if (!list.length) { box.innerHTML = '<div class="fempty">Nothing yet. Every group\'s evolution events, every spore and every spore taken up by another team show up here.</div>'; return; }
+  box.innerHTML = list.slice(0, 60).map(it => {
+    const e = EV[it.type] || ['event', 'var(--dim)'];
+    const chips = (it.groups || []).filter((g, i, a) => a.indexOf(g) === i);
+    return '<div class="fi' + (it.isNew && !calm ? ' new' : '') + '" style="--c:' + e[1] + '"><div class="fm"><span class="tag">' + e[0] + '</span>'
+      + (it.sub2 ? '<span>' + esc(it.sub2) + '</span>' : '') + '<time>' + hhmm(it.ts) + '</time>'
+      + '<span class="chips">' + chips.map(chip).join(chips.length > 1 ? '<span>&rarr;</span>' : '') + '</span></div>'
+      + '<div class="ft">' + boldTeam(it.text, it.team) + '</div>' + (it.sub ? '<div class="fs">' + esc(it.sub) + '</div>' : '') + '</div>';
+  }).join('');
+  for (const it of list) it.isNew = false;
+}
+function stats() {
+  const live = groups.filter(g => g.ok).length;
+  const teams = groups.reduce((s, g) => s + (Array.isArray(g.teams) ? g.teams.length : Number(g.teams) || 0), 0);
+  const help = groups.reduce((s, g) => s + (Number(g.help_obesvarade) || 0), 0);
+  const spores = Math.max(sporeSeen.size, groups.reduce((s, g) => s + (Number(g.sporer) || 0), 0));
+  $('stats').innerHTML = '<b>' + live + '</b> of <b>' + groups.length + '</b> groups live · <b>' + teams + '</b> teams · <b>' + spores + '</b> spores · <b>'
+    + crossCount + '</b> crossed groups · <b class="' + (help ? 'warn' : '') + '">' + help + '</b> open in #help';
+}
+// "Last activity 3 min ago" has to keep counting even between polls.
+function tickPanels() { for (const x of G.values()) if (x.g) fill(x); }
+
+let startad;
+async function health() {
+  const h = await api('/api/health').catch(() => null);
+  if (!h || !h.startad) return;
+  if (startad && h.startad !== startad) location.reload();
+  startad = startad || h.startad;
+}
+const safe = f => () => f().catch(() => {});
+async function boot() {
+  await health();
+  await pollGroups().catch(() => { $('empty').hidden = false; });
+  await pollSpores().catch(() => {});
+  drawArcs(); renderFeed(); stats();
+  booted = true;
+  requestAnimationFrame(frame);
+  setInterval(safe(pollGroups), 5000);
+  setInterval(safe(pollSpores), 5000);
+  setInterval(safe(health), 15000);
+  setInterval(() => { renderFeed(); if (!groups.length && Date.now() - lastGroups > 15000) $('empty').hidden = false; }, 1000);
+  setInterval(tickPanels, 10000);
+}
+boot();
+</script>
+</body>
+</html>

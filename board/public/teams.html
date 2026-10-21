@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent teams</title>
+<style>
+  :root {
+    --bg:#070b16; --bg2:#0b1222; --panel:#0e1628; --line:#1c2a44; --fg:#e9eef7; --dim:#8a98b3;
+    --amber:#ffb454; --mint:#5fd7a7; --sky:#7cc4ff; --lav:#c3a6ff; --gold:#ffd479; --void:#9a86c9; --rose:#ff7a85;
+  }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--fg);
+    background: radial-gradient(1100px 700px at 20% -10%, #13224488, transparent 70%),
+                radial-gradient(900px 640px at 80% 115%, #0f2b2a66, transparent 70%), var(--bg);
+    font:15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .head { flex:none; display:flex; align-items:baseline; gap:14px; padding:10px 18px 8px; border-bottom:1px solid var(--line); }
+  .head h1 { font-size:17px; margin:0; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); font-weight:700; }
+  .head .grp { font-size:17px; font-weight:600; }
+  .head .live { font-size:13px; color:var(--dim); display:flex; align-items:center; gap:6px; }
+  .head .live i { width:9px; height:9px; border-radius:50%; background:var(--dim); display:inline-block; }
+  .head .live.ok i { background:var(--mint); box-shadow:0 0 10px var(--mint); }
+  .head .live.bad i { background:var(--amber); }
+  .head .n { margin-left:auto; color:var(--dim); font-size:14px; }
+  .head .n b { color:var(--fg); font-weight:600; }
+
+  .wrap { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) clamp(300px, 24vw, 420px); }
+  .col { display:flex; flex-direction:column; min-width:0; min-height:0; }
+  #stage { position:relative; flex:1; min-height:0; overflow:hidden; }
+  #sv { position:absolute; left:0; top:0; display:block; }
+  #ov { position:absolute; inset:0; pointer-events:none; }
+
+  /* --- clusters --- */
+  .mem { stroke:var(--lc); stroke-width:2; stroke-opacity:.6; }
+  .memglow { fill:none; stroke:var(--lc); stroke-width:12; stroke-opacity:.07; }
+  .mv { transition:transform 1.2s cubic-bezier(.2,.8,.2,1); }
+  .nuc .core { fill:var(--lc); fill-opacity:.22; stroke:var(--lc); stroke-width:2; }
+  .nuc .heroimg { opacity:.75; }
+  .nuc .nt { font:700 11px system-ui, sans-serif; fill:#e9eef7; letter-spacing:.08em; paint-order:stroke; stroke:#070b16; stroke-width:3px; }
+  .nuc .halo, .nd .halo { fill:url(#halo); opacity:0; transition:opacity .5s; pointer-events:none; }
+  .nuc.on .halo, .nd.on .halo { opacity:1; animation:breathe 1.8s ease-in-out infinite; }
+  .nuc.on .core { fill-opacity:.55; stroke:#fff; }
+  @keyframes breathe { 50% { opacity:.45; } }
+
+  .nd { transition:transform 1.2s cubic-bezier(.2,.8,.2,1), opacity 1.4s ease; }
+  .nd .shp { transition:transform 1.2s cubic-bezier(.2,.8,.2,1); }
+  .nd .body { fill:var(--c); fill-opacity:.28; stroke:var(--c); stroke-width:1.8; vector-effect:non-scaling-stroke; transition:fill .8s, stroke .8s, fill-opacity .8s; }
+  .nd.k-cand .body { fill-opacity:.05; stroke-dasharray:4 3; }
+  .nd .ring { fill:none; stroke:var(--gold); stroke-width:1.6; vector-effect:non-scaling-stroke; }
+  .nd.on .body { fill-opacity:.75; stroke:#fff; }
+  .nd.on .shp { filter:drop-shadow(0 0 7px var(--c)); }
+  .nl { font:600 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill:#dbe4f2; text-anchor:middle; paint-order:stroke; stroke:#070b16; stroke-width:4px; stroke-linejoin:round; }
+  .hidelab .nd:not(.on):not(.fresh) .nl { display:none; }
+  .nd.on .nl { fill:#fff; }
+  .nd.ghost { opacity:.55; }
+  .nd.ghost .body { fill:#2b2547; fill-opacity:1; stroke:#6e6296; stroke-dasharray:none; }
+  .nd.ghost .ring { stroke:#6e6296; }
+  .nd.ghost .nl { font-size:11px; fill:#9b92bb; stroke-width:3px; }
+  .nd.ghost.nolab .nl { display:none; }
+
+  .vel { fill:url(#voidg); stroke:#4b4170; stroke-width:1; stroke-dasharray:3 5; }
+  .vtxt { font:700 11px system-ui, sans-serif; letter-spacing:.16em; fill:#8f86ad; text-anchor:middle; text-transform:uppercase; }
+
+  .spo { fill:#e4fff3; filter:url(#glow); }
+  .spo.newsp { animation:sporein 1.4s ease-out; transform-box:fill-box; transform-origin:center; }
+  @keyframes sporein { from { transform:scale(4); opacity:0; } to { transform:none; opacity:1; } }
+  .thr { fill:none; stroke:var(--mint); stroke-opacity:.26; stroke-linecap:round; }
+  .thr.far { stroke-dasharray:5 7; stroke-opacity:.16; }
+  .trav { fill:#eafff5; filter:url(#glow); }
+  .rip { fill:none; stroke:var(--c, var(--mint)); stroke-width:2; animation:rip 1.3s ease-out forwards; }
+  @keyframes rip { from { r:6px; opacity:.9; } to { r:58px; opacity:0; } }
+  .mote { fill:#9fc3ff; }
+  .gate { fill:none; stroke:var(--mint); stroke-opacity:.55; stroke-width:1.5; stroke-dasharray:3 4; }
+  .ptxt { font:600 13px system-ui, sans-serif; fill:#c8d3e6; text-anchor:middle; }
+  .ptxt tspan.c { fill:#8a98b3; font-weight:500; }
+
+  /* --- HTML overlay --- */
+  .th { position:absolute; left:0; top:0; text-align:center; transition:transform 1.2s cubic-bezier(.2,.8,.2,1); padding:0 8px; }
+  .th .r1 { display:flex; justify-content:center; align-items:center; gap:10px; }
+  .th img { width:44px; height:28px; object-fit:cover; border-radius:6px; border:1px solid #ffffff22; flex:none; }
+  .th .tn { font-size:22px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .th .lb { flex:none; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--lc); border:1px solid var(--lc); border-radius:5px; padding:1px 6px; opacity:.9; }
+  .th.narrow img { display:none; }
+  .th.narrow .tn { font-size:19px; }
+  .th.narrow .lb { font-size:10px; letter-spacing:.08em; }
+  .th .r2 { display:flex; justify-content:center; align-items:center; gap:10px; font-size:13px; color:var(--dim); margin-top:3px; white-space:nowrap; }
+  .th .spk { width:64px; height:16px; overflow:visible; }
+  .th .spk polyline { fill:none; stroke:var(--lc); stroke-width:1.6; vector-effect:non-scaling-stroke; opacity:.85; }
+  .th .st { overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .th .st.work { color:var(--mint); }
+  .th .st.work b { font-weight:700; }
+  .th .st.work span { color:#c8d3e6; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; }
+  .th .st.quiet { color:#c9a36a; }
+  .pill { position:absolute; left:0; top:0; opacity:0; white-space:nowrap; transition:transform .6s cubic-bezier(.2,.8,.2,1), opacity .5s; background:#0b1222f0; border:1px solid var(--c); color:#fff; font:700 12px ui-monospace, SFMono-Regular, Menlo, monospace; padding:2px 8px; border-radius:999px; box-shadow:0 0 14px color-mix(in srgb, var(--c) 50%, transparent); }
+  .pill.on { opacity:1; }
+
+  .snap, .snap * { transition:none !important; }
+  #empty { position:absolute; inset:0; display:grid; place-items:center; padding:24px; }
+  #empty[hidden] { display:none; }
+  #empty .box { max-width:720px; text-align:center; color:var(--dim); font-size:18px; line-height:1.55; }
+  #empty h2 { color:var(--fg); font-size:30px; margin:0 0 12px; font-weight:700; }
+  #empty p { margin:0 0 12px; }
+  #empty b { color:var(--fg); font-weight:600; }
+
+  .legend { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; padding:8px 16px 10px; border-top:1px solid var(--line); font-size:13px; color:var(--dim); }
+  .legend .lg { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .legend .lg svg { width:18px; height:18px; overflow:visible; }
+  .legend .mb { width:16px; height:16px; border-radius:50%; border:2px solid var(--c); background:color-mix(in srgb, var(--c) 18%, transparent); display:inline-block; }
+  .legend .sep { width:1px; height:16px; background:var(--line); }
+  .legend .h { color:#c8d3e6; font-weight:600; }
+
+  /* --- feed --- */
+  aside { border-left:1px solid var(--line); display:flex; flex-direction:column; min-height:0; background:#0a101dcc; }
+  aside h2 { margin:0; padding:12px 16px 10px; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700; border-bottom:1px solid var(--line); }
+  #feed { flex:1; overflow:hidden; padding:0 16px; }
+  .fi { padding:10px 0 11px; border-bottom:1px solid #16213a; }
+  .fi.new { animation:fin 1.2s ease-out; }
+  @keyframes fin { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
+  .fi.dimmed { opacity:.62; }
+  .fm { display:flex; gap:8px; align-items:center; font-size:12px; color:var(--dim); }
+  .tag { color:var(--c); border:1px solid color-mix(in srgb, var(--c) 55%, transparent); background:color-mix(in srgb, var(--c) 10%, transparent); padding:0 7px; border-radius:999px; text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700; }
+  .tag2 { color:#c8d3e6; font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+  .fm .fg { margin-left:auto; color:#c8d3e6; font-weight:600; }
+  .ft { font-size:15.5px; margin-top:4px; color:#dfe6f2; overflow-wrap:anywhere; }
+  .ft b { color:#fff; font-weight:650; }
+  .fs { font-size:13.5px; color:var(--dim); margin-top:3px; overflow-wrap:anywhere; }
+  .fempty { color:var(--dim); padding:18px 0; font-size:15px; line-height:1.5; }
+
+  @media (max-width:1100px) { .wrap { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) 34vh; } aside { border-left:0; border-top:1px solid var(--line); } }
+  @media (prefers-reduced-motion: reduce) {
+    .mv, .nd, .nd .shp, .th, .pill { transition:none !important; }
+    .nuc.on .halo, .nd.on .halo { animation:none; }
+    .fi.new, .spo.newsp { animation:none; }
+  }
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<div class="head">
+  <h1>Agent teams</h1><span class="grp" id="grp"></span>
+  <span class="live" id="live"><i></i><span id="lv">connecting</span></span>
+  <span class="n" id="stats"></span>
+</div>
+<div class="wrap">
+  <div class="col">
+    <div id="stage">
+      <svg id="sv" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="halo"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="#e9fff6" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="voidg"><stop offset="0" stop-color="#1a1430" stop-opacity=".95"/><stop offset="1" stop-color="#0b0a18" stop-opacity=".2"/></radialGradient>
+          <radialGradient id="gr-factory" r=".6"><stop offset="0" stop-color="#7cc4ff" stop-opacity=".16"/><stop offset="1" stop-color="#7cc4ff" stop-opacity=".03"/></radialGradient>
+          <radialGradient id="gr-hive" r=".6"><stop offset="0" stop-color="#ffb454" stop-opacity=".16"/><stop offset="1" stop-color="#ffb454" stop-opacity=".03"/></radialGradient>
+          <radialGradient id="gr-flux" r=".6"><stop offset="0" stop-color="#c3a6ff" stop-opacity=".17"/><stop offset="1" stop-color="#c3a6ff" stop-opacity=".03"/></radialGradient>
+          <radialGradient id="gr-mixed" r=".6"><stop offset="0" stop-color="#dfe7f5" stop-opacity=".13"/><stop offset="1" stop-color="#dfe7f5" stop-opacity=".02"/></radialGradient>
+          <radialGradient id="gr-none" r=".6"><stop offset="0" stop-color="#8a98b3" stop-opacity=".12"/><stop offset="1" stop-color="#8a98b3" stop-opacity=".02"/></radialGradient>
+          <filter id="glow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+      </svg>
+      <div id="ov"></div>
+      <div id="empty" hidden><div class="box">
+        <h2>No agent teams yet</h2>
+        <p>When someone starts an agent session in <b>projects/&lt;your-team-name&gt;/</b>, the team appears here as a living cell.</p>
+        <p>Its agents, capabilities and timelines become <b>nodes</b>. The agent working right now <b>glows</b>, with the tool it is using. New nodes <b>bloom</b>, dissolved ones sink into the <b>void</b>.</p>
+        <p><b>Spores</b> (lessons a team shares) orbit the team that shared them, and travel to every team that takes them up.</p>
+      </div></div>
+    </div>
+    <div class="legend" id="legend">
+      <span class="h">Membrane = lab</span>
+      <span class="lg"><i class="mb" style="--c:#7cc4ff"></i>agent-factory</span>
+      <span class="lg"><i class="mb" style="--c:#ffb454"></i>hive</span>
+      <span class="lg"><i class="mb" style="--c:#c3a6ff"></i>flux</span>
+      <span class="sep"></span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><rect x="-7" y="-7" width="14" height="14" rx="4" fill="#7cc4ff55" stroke="#7cc4ff" stroke-width="1.6"/></svg>agent</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><rect x="-7" y="-7" width="14" height="14" rx="4" fill="none" stroke="#7cc4ff" stroke-width="1.6" stroke-dasharray="3 2"/></svg>candidate</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><polygon points="8,0 4,6.9 -4,6.9 -8,0 -4,-6.9 4,-6.9" fill="#ffb45455" stroke="#ffb454" stroke-width="1.6"/></svg>capability (size = energy)</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><circle r="7" fill="#c3a6ff55" stroke="#c3a6ff" stroke-width="1.6"/></svg>timeline</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><circle r="5.5" fill="#ffd47955" stroke="#ffd479" stroke-width="1.6"/><circle r="8.5" fill="none" stroke="#ffd479" stroke-width="1.2"/></svg>winner</span>
+      <span class="sep"></span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><circle r="10" fill="#ffffff22"/><circle r="5" fill="#fff"/></svg>working now</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><circle r="3.5" fill="#e4fff3" filter="url(#glow)"/></svg>spore shared</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><path d="M-9,5 Q0,-8 9,5" fill="none" stroke="#5fd7a7" stroke-width="1.8" stroke-opacity=".7"/></svg>spore taken up</span>
+      <span class="lg"><svg viewBox="-10 -10 20 20"><ellipse rx="9" ry="5" fill="#1a1430" stroke="#4b4170" stroke-dasharray="2 2"/><circle r="2.5" fill="#6e6296"/></svg>void / graveyard</span>
+    </div>
+  </div>
+  <aside><h2>Evolution and spores</h2><div id="feed"></div></aside>
+</div>
+<script src="/nav.js" defer></script>
+<script>
+'use strict';
+// Agent teams: what is happening inside every agent team of this group, while people work.
+// Data (all JSON, all polled, nothing is written from this page):
+//   GET /api/lag          roster per team: {teams:{<team>:{lab, harness, roster, ts, hero}}}
+//   GET /api/aktivitet    who is working right now: {teams:{<team>:{agent, verktyg, mal, ts, perMin}}, senaste:[...]}
+//   GET /api/evolution    evolution events, ?since=<id>
+//   GET /api/sporer?alla=1  spores from this group and (through the hub) from the other groups
+//   GET /api/health       group name, hub, and `startad` (the page reloads itself after a deploy)
+
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const mq = matchMedia('(prefers-reduced-motion: reduce)');
+let calm = mq.matches;
+if (mq.addEventListener) mq.addEventListener('change', e => { calm = e.matches; });
+
+const LAB = {
+  factory: { name:'agent-factory', color:'#7cc4ff' },
+  hive:    { name:'hive',          color:'#ffb454' },
+  flux:    { name:'flux',          color:'#c3a6ff' },
+  mixed:   { name:'mixed',         color:'#dfe7f5' },
+  none:    { name:'no lab',        color:'#8a98b3' },
+};
+const KIND = {
+  agent: { color:'#7cc4ff', shape:'square' },
+  cand:  { color:'#7cc4ff', shape:'square' },
+  cap:   { color:'#ffb454', shape:'hex' },
+  tl:    { color:'#c3a6ff', shape:'circle' },
+  win:   { color:'#ffd479', shape:'circle' },
+};
+// Event type -> [tag word, colour] in the feed.
+const EV = {
+  'team.ny':         ['new team',   'var(--mint)'],
+  'agent.ny':        ['new agent',  'var(--sky)'],
+  'agent.borta':     ['left',       'var(--void)'],
+  'kandidat.ny':     ['candidate',  'var(--sky)'],
+  'formaga.ny':      ['spawned',    'var(--amber)'],
+  'formaga.upplost': ['dissolved',  'var(--void)'],
+  'formaga.borta':   ['removed',    'var(--void)'],
+  'tidslinje.ny':    ['timeline',   'var(--lav)'],
+  'vinnare.ny':      ['winner',     'var(--gold)'],
+  'kyrkogard.ny':    ['graveyard',  'var(--void)'],
+  'logg':            ['log',        'var(--dim)'],
+  'spore':           ['spore',      'var(--mint)'],
+  'integ':           ['taken up',   'var(--mint)'],
+};
+const SPORE_TYPE = { tips:'tip', fallgrop:'pitfall', monster:'pattern', verktyg:'tool', tip:'tip', pitfall:'pitfall', pattern:'pattern', tool:'tool' };
+const FRESH = 12000;     // ms: an agent glows this long after its last tool call
+const PILL = 25000;      // ms: the tool label stays this long
+const MAXG = 12;         // ghosts shown in a void
+
+let skew = 0;            // server clock minus ours, from the Date header
+const now = () => Date.now() + skew;
+let okAt = 0;
+async function api(u) {
+  const r = await fetch(u, { cache:'no-store' });
+  const d = Date.parse(r.headers.get('date') || '');
+  if (isFinite(d)) { const s = d - Date.now(); skew = Math.abs(s) > 2500 ? s : 0; }
+  if (!r.ok) throw new Error(u + ': ' + r.status);
+  const j = await r.json(); okAt = Date.now(); return j;
+}
+function hash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const nm = x => String(x && typeof x === 'object' ? (x.namn || x.name || x.id || '') : (x == null ? '' : x)).trim();
+const short = (s, n) => { n = n || 16; return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const hhmm = ts => { const d = new Date(ts); return isFinite(d) ? d.toTimeString().slice(0, 5) : ''; };
+function ago(ms) { const s = Math.max(0, Math.round(ms / 1000)); if (s < 60) return s + ' s'; const m = Math.round(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
+const tsOf = v => typeof v === 'number' ? v : (Date.parse(v) || 0);
+
+const stage = $('stage'), svg = $('sv'), ov = $('ov');
+const L = {};
+for (const k of ['motes', 'threads', 'voids', 'clusters', 'ports', 'fx']) L[k] = S('g', { id:'L-' + k }, svg);
+
+let booted = false, needLayout = true;
+let myGroup = '', hubUrl = '', onHub = false;
+const groupNames = new Map();
+
+// ------------------------------------------------------------------ teams
+const teams = new Map();
+function team(name) {
+  name = String(name);
+  let T = teams.get(name);
+  if (T) return T;
+  const seed = hash(name);
+  T = { name, lab:'', hero:null, nodes:new Map(), seq:0, ghosts:[], ghostSet:new Set(), act:null, actBy:new Map(),
+        spark:[], perMin:0, pulse:0, s1:(seed % 997) / 97, s2:((seed >>> 10) % 991) / 89, spores:[], geo:null, cur:null, ang:(seed % 628) / 100 };
+  T.g = S('g', { class:'cl' }, L.clusters);
+  T.memGlow = S('path', { class:'memglow' }, T.g);
+  T.mem = S('path', { class:'mem' }, T.g);
+  T.orbPos = S('g', { class:'mv' }, T.g); T.orbRot = S('g', {}, T.orbPos);   // spores; placed along the ellipse every frame
+  T.nuc = S('g', { class:'nuc mv' }, T.g);
+  T.nucHalo = S('circle', { class:'halo' }, T.nuc);
+  T.nucCore = S('circle', { class:'core' }, T.nuc);
+  const cp = S('clipPath', { id:'cp' + seed }, T.nuc); T.clipC = S('circle', { cx:0, cy:0 }, cp);
+  T.nucImg = S('image', { class:'heroimg', 'clip-path':'url(#cp' + seed + ')', preserveAspectRatio:'xMidYMid slice' }, T.nuc);
+  T.nucTxt = S('text', { class:'nt', 'text-anchor':'middle', dy:'.35em' }, T.nuc); T.nucTxt.textContent = 'main';
+  T.nodeG = S('g', {}, T.g);
+  T.vd = S('g', { class:'mv' }, L.voids);
+  T.vEl = S('ellipse', { class:'vel' }, T.vd);
+  T.vTxt = S('text', { class:'vtxt' }, T.vd);
+  T.hd = document.createElement('div'); T.hd.className = 'th';
+  T.hd.innerHTML = '<div class="r1"><img alt="" hidden><b class="tn"></b><span class="lb"></span></div>'
+    + '<div class="r2"><svg class="spk" viewBox="0 0 60 16" preserveAspectRatio="none"><polyline points=""/></svg><span class="rate"></span><span class="st"></span><span class="sc"></span></div>';
+  T.hd.querySelector('.tn').textContent = name;
+  ov.appendChild(T.hd);
+  T.pill = document.createElement('div'); T.pill.className = 'pill'; ov.appendChild(T.pill);
+  teams.set(name, T);
+  setLab(T, 'none');
+  needLayout = true;
+  return T;
+}
+function setLab(T, lab) {
+  lab = LAB[lab] ? lab : 'none';
+  if (T.lab === lab) return;
+  T.lab = lab;
+  for (const el of [T.g, T.hd, T.vd]) el.style.setProperty('--lc', LAB[lab].color);
+  T.mem.setAttribute('fill', 'url(#gr-' + lab + ')');
+  T.hd.querySelector('.lb').textContent = LAB[lab].name;
+}
+function setHero(T, src) {
+  src = src || null;
+  if (T.hero === src) return;
+  T.hero = src;
+  const img = T.hd.querySelector('img');
+  if (src) { T.nucImg.setAttribute('href', src); img.src = src; img.hidden = false; img.onerror = () => { img.hidden = true; T.nucImg.removeAttribute('href'); }; }
+  else { T.nucImg.removeAttribute('href'); img.hidden = true; }
+}
+
+// ------------------------------------------------------------------ nodes
+function hexPts(r) { const p = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i; p.push((r * Math.cos(a)).toFixed(2) + ',' + (r * Math.sin(a)).toFixed(2)); } return p.join(' '); }
+function makeEl(T, kind, name) {
+  const el = S('g', { class:'nd k-' + kind }, T.nodeG);
+  el.style.setProperty('--c', KIND[kind].color);
+  const halo = S('circle', { class:'halo', r:24 }, el);
+  const shp = S('g', { class:'shp' }, el);
+  const k = KIND[kind];
+  if (k.shape === 'square') S('rect', { class:'body', x:-8.5, y:-8.5, width:17, height:17, rx:4.5 }, shp);
+  else if (k.shape === 'hex') S('polygon', { class:'body', points:hexPts(10.5) }, shp);
+  else S('circle', { class:'body', r:kind === 'win' ? 8 : 10 }, shp);
+  if (kind === 'win') S('circle', { class:'ring', r:12.5 }, shp);
+  const lab = S('text', { class:'nl' }, el); lab.textContent = short(name);
+  return { el, halo, shp, lab };
+}
+function makeNode(T, kind, name, energy, from) {
+  const N = Object.assign({ key:kind + ':' + name, kind, name, energy, seq:T.seq++, x:0, y:0, size:10, born:0 }, makeEl(T, kind, name));
+  const G = T.geo, st = from || (G ? [G.cx, G.cy] : [0, 0]);
+  const anim = booted && !calm;
+  N.el.style.transform = 'translate(' + st[0] + 'px,' + st[1] + 'px) scale(' + (anim && !from ? 0.01 : 1) + ')';
+  if (booted) { N.born = now(); N.el.classList.add('fresh'); N.isNew = true; setTimeout(() => N.el.classList.remove('fresh'), 30000); }
+  T.nodes.set(N.key, N);
+  return N;
+}
+function toGhost(T, N) {
+  T.nodes.delete(N.key);
+  N.el.classList.remove('on', 'fresh'); N.el.classList.add('ghost');
+  N.lab.textContent = short(N.name, 10);
+  T.ghosts.push(N); T.ghostSet.add(N.name);
+}
+function addGhost(T, kind, name) {
+  if (T.ghostSet.has(name)) return;
+  const N = Object.assign({ key:'ghost:' + name, kind, name, x:0, y:0, size:6 }, makeEl(T, kind, name));
+  N.el.classList.add('ghost'); N.lab.textContent = short(name, 10);
+  if (T.geo) N.el.style.transform = 'translate(' + T.geo.vx + 'px,' + T.geo.vy + 'px)';
+  T.ghosts.push(N); T.ghostSet.add(name);
+}
+function findNode(T, name) {
+  if (!name) return null;
+  const n = String(name).toLowerCase();
+  for (const N of T.nodes.values()) if (N.name.toLowerCase() === n) return N;
+  return null;
+}
+
+// Roster in, nodes out. The diff against what is on screen drives the animations, so the page stays
+// right even when it misses an event: births bloom out of the nucleus, deaths sink into the void.
+function syncRoster(T, R) {
+  R = R || {};
+  const want = new Map();
+  const add = (kind, x, energy) => { const name = nm(x); if (name) want.set(kind + ':' + name, { kind, name, energy }); };
+  (R.agents || []).forEach(x => add('agent', x));
+  (R.kandidater || []).forEach(x => add('cand', x));
+  (R.formagor || []).forEach(x => add('cap', x, x && typeof x === 'object' ? Number(x.energi != null ? x.energi : x.energy) : NaN));
+  (R.tidslinjer || []).forEach(x => add('tl', x));
+  (R.vinnare || []).forEach(x => add('win', x));
+  for (const k of [...want.keys()]) if (k.startsWith('win:')) want.delete('tl:' + k.slice(4));   // a winner is shown once
+  const leaving = new Map();
+  for (const [k, N] of T.nodes) if (!want.has(k)) leaving.set(N.name, N);
+  const order = { agent:0, cand:1, cap:2, tl:3, win:4 };
+  const arriving = [...want.entries()].filter(([k]) => !T.nodes.has(k)).sort((a, b) => order[a[1].kind] - order[b[1].kind]);
+  for (const [, w] of arriving) {
+    const prev = leaving.get(w.name);           // candidate hired, timeline crowned: the node moves, it does not die
+    const N = makeNode(T, w.kind, w.name, w.energy, prev ? [prev.x, prev.y] : null);
+    if (prev) { leaving.delete(w.name); T.nodes.delete(prev.key); prev.el.remove(); N.seq = prev.seq; }
+    if (booted && !calm && !prev) setTimeout(() => ripple(N.x, N.y, KIND[w.kind].color), 900);
+  }
+  for (const N of leaving.values()) toGhost(T, N);
+  for (const [k, w] of want) { const N = T.nodes.get(k); if (N && w.energy !== N.energy) N.energy = w.energy; }
+  (R.upplosta || []).forEach(x => { const n = nm(x); if (n && !findNode(T, n)) addGhost(T, 'cap', n); });
+  (R.kyrkogard || []).forEach(x => { const n = nm(x); if (n && !findNode(T, n)) addGhost(T, 'tl', n); });
+  if (arriving.length || leaving.size) T.pulse = 1;
+  layoutNodes(T);
+}
+
+// ------------------------------------------------------------------ layout
+// A cluster is an ellipse: Ry is set by the cell's height, Rx may be up to 1.5 Ry when the cell is wide.
+// The extra width is where the node labels go.
+const HEAD = 54, ORB = 16;
+const voidH = ch => Math.max(32, Math.min(52, ch * 0.12));
+function sizeFor(cw, ch) {
+  let ry = Math.max(28, Math.min(220, (ch - HEAD - voidH(ch) - 10) / 2 - ORB));
+  const rx = Math.max(28, Math.min(cw * 0.45 - ORB, ry * 1.5));
+  ry = Math.min(ry, rx * 1.1);
+  return { rx, ry, score:Math.sqrt(rx * ry) * Math.min(1, cw / 280) };   // the header needs about 280 px; narrower cells lose
+}
+function geoFor(x, y, cw, ch, rx, ry) {
+  const vh = voidH(ch), block = HEAD + 2 * (ry + ORB) + vh + 10;
+  const oy = y + Math.max(0, (ch - block) / 2);
+  const cx = x + cw / 2, cy = oy + HEAD + ORB + ry;
+  return { x, y, cw, ch, cx, cy, R:ry, Rx:rx, sx:rx / ry, headY:oy, nucR:Math.max(13, Math.min(28, ry * 0.15)),
+           vx:cx, vy:cy + ry + ORB + vh / 2 + 2, vw:Math.min(cw * 0.44, rx), vh:vh / 2 - 2 };
+}
+const LABW = 7;     // px per character in a 13px node label
+function rings(n, G, inner, outer, s, labw, force) {
+  const pos = []; let r = inner + s + 2, ring = 0;
+  const step = 2 * s + (labw ? 24 : 7), per = labw ? Math.max(2 * s + 10, labw) : 2 * s + 6;
+  while (pos.length < n) {
+    if (r + s > outer - (labw ? 10 : 0) && !force) return null;   // a label above the top node needs room too
+    const a2 = r * G.sx, len = 2 * Math.PI * Math.sqrt((a2 * a2 + r * r) / 2);
+    const k = Math.min(Math.max(1, Math.floor(len / per)), n - pos.length);
+    const off = -Math.PI / 2 + (ring % 2 ? Math.PI / k : 0);
+    for (let j = 0; j < k; j++) { const a = off + j * 2 * Math.PI / k; pos.push([G.cx + a2 * Math.cos(a), G.cy + r * Math.sin(a)]); }
+    r += step; ring++;
+  }
+  return pos;
+}
+// Labelled nodes sit in staggered rows (a honeycomb), filled from the nucleus outwards: names are
+// horizontal, so rows use the width of the ellipse far better than rings do. Slots are sorted by
+// distance, so a new node takes the next slot out and the others stay where they are.
+function rows(n, G, s, labw) {
+  const rowH = 2 * s + 24, per = Math.max(2 * s + 12, labw), slots = [];
+  const m = Math.floor((G.R - 8 - s) / rowH);
+  for (let j = -m; j <= m; j++) {
+    const dy = j * rowH;
+    if (j < 0 && -dy + s + 20 > G.R + ORB - 4) continue;                  // label above must clear the header
+    const hw = G.Rx * Math.sqrt(Math.max(0, 1 - (dy / G.R) ** 2)) - Math.max(s, labw / 2) - 2;
+    if (hw < 0) continue;
+    const off = (j & 1) ? per / 2 : 0;
+    for (let k = Math.ceil((-hw - off) / per); k <= Math.floor((hw - off) / per); k++) {
+      const x = off + k * per;
+      if (j === 0 && Math.abs(x) < G.nucR + s + 8) continue;
+      slots.push([x, dy]);
+    }
+  }
+  if (slots.length < n) return null;
+  slots.sort((a, b) => (Math.hypot(a[0] / G.sx, a[1]) - Math.hypot(b[0] / G.sx, b[1])) || (a[1] - b[1]) || (a[0] - b[0]));
+  return slots.slice(0, n).map(([x, y]) => [G.cx + x, G.cy + y]);
+}
+// Largest nodes that fit with full names, then with names cut to 10 and 7 characters, then without
+// names in rings (the working agent and newborn nodes still show theirs).
+function fit(list, G) {
+  const n = list.length, inner = G.nucR + 8, outer = G.R - 6;
+  if (!n) return { pos:[], s:12, trunc:16 };
+  const longest = Math.max(...list.map(N => N.name.length));
+  const s0 = Math.max(6, Math.min(19, Math.sqrt(Math.PI * G.sx * (outer * outer - inner * inner) / n) * 0.3));
+  for (const trunc of [16, 10, 7]) {
+    const labw = LABW * Math.min(trunc, longest) + 12;
+    for (let s = s0; s >= 7; s -= 1) { const pos = rows(n, G, s, labw); if (pos) return { pos, s, trunc }; }
+  }
+  for (let s = s0; s >= 4; s -= 1) { const pos = rings(n, G, inner, outer, s, 0); if (pos) return { pos, s, trunc:0 }; }
+  return { pos:rings(n, G, inner, outer, 4, 0, true), s:4, trunc:0 };
+}
+function layoutNodes(T) {
+  const G = T.geo; if (!G) return;
+  const live = [...T.nodes.values()].sort((a, b) => a.seq - b.seq);
+  const caps = live.filter(N => N.kind === 'cap' && isFinite(N.energy));
+  const maxE = Math.max(1e-9, ...caps.map(N => N.energy));
+  const plan = fit(live, G);
+  T.g.classList.toggle('hidelab', !plan.trunc);
+  live.forEach((N, i) => {
+    const [x, y] = plan.pos[i];
+    let size = plan.s;
+    if (N.kind === 'cap' && isFinite(N.energy) && caps.length > 0) size = plan.s * (0.6 + 0.62 * Math.sqrt(Math.max(0, N.energy) / maxE));
+    if (N.isNew) { getComputedStyle(N.el).transform; N.isNew = false; }   // let the birth start from the nucleus
+    N.x = x; N.y = y; N.size = size;
+    N.el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(1)';
+    N.shp.style.transform = 'scale(' + (size / 10) + ')';
+    N.halo.setAttribute('r', size * 2.4);
+    N.lab.textContent = short(N.name, plan.trunc || 16);
+    N.lab.setAttribute('y', y < G.cy - 2 ? -(size + 7) : size + 16);   // above in the upper half, so ring one never covers the nucleus
+  });
+  layoutGhosts(T);
+}
+function layoutGhosts(T) {
+  const G = T.geo; if (!G) return;
+  const show = T.ghosts.slice(-MAXG), k = show.length;
+  const gap = Math.min(70, (G.vw * 1.7) / Math.max(k, 1)), x0 = G.vx - gap * (k - 1) / 2;
+  for (const N of T.ghosts.slice(0, -MAXG)) if (N.el.isConnected) N.el.remove();   // the count remains, the element goes
+  show.forEach((N, i) => {
+    N.x = x0 + i * gap; N.y = G.vy - 3; N.size = 6;
+    N.el.classList.toggle('nolab', gap < 54);
+    N.lab.textContent = short(N.name, Math.max(6, Math.floor(gap / 6.4)));
+    N.el.style.transform = 'translate(' + N.x + 'px,' + N.y + 'px) scale(1)';
+    N.shp.style.transform = 'scale(.6)'; N.lab.setAttribute('y', 17);
+  });
+  const word = T.lab === 'flux' ? 'graveyard' : 'void';
+  T.vTxt.textContent = T.ghosts.length ? word + ' · ' + T.ghosts.length : word;
+}
+function layout() {
+  needLayout = false;
+  const W = stage.clientWidth, H = stage.clientHeight;
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const pg = foreignGroups();
+  const band = pg.length ? 50 : 0;
+  for (const [id, P] of ports) if (!pg.includes(id)) { P.g.remove(); ports.delete(id); }
+  pg.forEach((id, i) => { const P = port(id); P.x = W * (i + 1) / (pg.length + 1); P.y = 0; P.g.style.transform = 'translate(' + P.x + 'px,0)'; portText(P); });
+  const names = [...teams.keys()].sort((a, b) => a.localeCompare(b, 'en'));
+  const n = names.length;
+  $('empty').hidden = n > 0;
+  if (n) {
+    const top = band + 4, h = H - top - 4, w = W - 12;
+    let best = null;
+    for (let cols = 1; cols <= n; cols++) {
+      const rows = Math.ceil(n / cols), cw = w / cols, ch = h / rows, z = sizeFor(cw, ch);
+      if (!best || z.score > best.score + 0.5) best = Object.assign({ cols, cw, ch }, z);
+    }
+    names.forEach((name, i) => {
+      const T = teams.get(name);
+      if (!T.geo) for (const el of [T.g, T.vd, T.hd, T.pill]) el.classList.add('snap');   // first placement: no glide from the corner
+      const row = Math.floor(i / best.cols), col = i % best.cols, inRow = Math.min(best.cols, n - row * best.cols);
+      const G = T.geo = geoFor(6 + (w - inRow * best.cw) / 2 + col * best.cw, top + row * best.ch, best.cw, best.ch, best.rx, best.ry);
+      T.hd.style.width = G.cw + 'px';
+      T.hd.classList.toggle('narrow', G.cw < 360);
+      T.hd.style.transform = 'translate(' + G.x + 'px,' + G.headY + 'px)';
+      T.nuc.style.transform = 'translate(' + G.cx + 'px,' + G.cy + 'px)';
+      for (const c of [T.nucCore, T.clipC]) c.setAttribute('r', G.nucR);
+      T.nucHalo.setAttribute('r', G.nucR * 2.4);
+      for (const [a, v] of [['x', -G.nucR], ['y', -G.nucR], ['width', 2 * G.nucR], ['height', 2 * G.nucR]]) T.nucImg.setAttribute(a, v);
+      T.orbPos.style.transform = 'translate(' + G.cx + 'px,' + G.cy + 'px)';
+      T.vd.style.transform = 'translate(' + G.vx + 'px,' + G.vy + 'px)';
+      T.vEl.setAttribute('rx', G.vw); T.vEl.setAttribute('ry', G.vh);
+      T.vTxt.setAttribute('y', -G.vh - 5);
+      if (!T.cur || calm) T.cur = booted && !calm && !T.cur ? { cx:G.cx, cy:G.cy, R:0, Rx:0 } : { cx:G.cx, cy:G.cy, R:G.R, Rx:G.Rx };   // a new team's membrane grows out of nothing
+      layoutNodes(T); orbit(T); glow(T);
+    });
+  }
+  if (document.querySelector('.snap')) { void document.body.offsetHeight; document.querySelectorAll('.snap').forEach(e => e.classList.remove('snap')); }
+  for (const th of threads.values()) th.path.setAttribute('d', threadD(th.a, th.b, th.bend) || '');
+  for (const m of motes) { if (m.x > W) m.x = Math.random() * W; if (m.y > H) m.y = Math.random() * H; }
+}
+new ResizeObserver(() => { needLayout = true; }).observe(stage);
+
+// ------------------------------------------------------------------ activity
+function glow(T) {
+  if (!T.geo) return;
+  const t = now();
+  for (const N of T.nodes.values()) N.el.classList.toggle('on', t - (T.actBy.get(N.name.toLowerCase()) || 0) < FRESH);
+  let mainOn = false;
+  for (const [ag, ts] of T.actBy) if (t - ts < FRESH && !findNode(T, ag)) mainOn = true;
+  T.nuc.classList.toggle('on', mainOn);
+  // At the node: only the tool, as a small tag. In the team's header: who, which tool, which file.
+  const a = T.act, P = T.pill, st = T.hd.querySelector('.st');
+  const live = a && a.ts && t - a.ts < PILL;
+  if (live) {
+    const N = findNode(T, a.agent), G = T.geo;
+    const x = N ? N.x : G.cx, y = N ? N.y : G.cy, sz = N ? N.size : G.nucR;
+    P.style.setProperty('--c', N ? KIND[N.kind].color : LAB[T.lab].color);
+    const tool = short(String(a.verktyg || 'working'), 12);
+    if (P.textContent !== tool) P.textContent = tool;
+    // on the outer side of the node, away from the nucleus; below the nucleus when it is main working
+    const w = P.offsetWidth;
+    const px = !N ? x - w / 2 : (x >= G.cx ? x + sz + 6 : x - sz - 6 - w), py = !N ? y + sz + 4 : y - 11;
+    P.style.transform = 'translate(' + px + 'px,' + py + 'px)';
+    P.classList.add('on');
+  } else P.classList.remove('on');
+  const last = a && a.ts ? a.ts : 0;
+  if (live && t - last < 15000) {
+    const base = String(a.mal || '').split(/[\\/]/).filter(Boolean).pop() || '';
+    st.innerHTML = '<b>' + esc(a.agent || 'main') + '</b> ' + esc(a.verktyg || '') + (base ? ' <span>' + esc(base) + '</span>' : '');
+    st.className = 'st work';
+  }
+  else if (last) { st.textContent = 'quiet ' + ago(t - last); st.className = 'st quiet'; }
+  else { st.textContent = 'no activity yet'; st.className = 'st'; }
+}
+function spark(T) {
+  const pts = T.spark, max = Math.max(5, ...pts);
+  const line = pts.map((v, i) => (i * 60 / 59).toFixed(1) + ',' + (15 - v / max * 14).toFixed(1)).join(' ');
+  T.hd.querySelector('.spk polyline').setAttribute('points', line);
+  T.hd.querySelector('.rate').textContent = Math.round(T.perMin) + '/min';
+}
+let lastActTs = 0;
+async function pollAkt() {
+  const j = await api('/api/aktivitet');
+  const tm = (j && j.teams) || {};
+  for (const name of Object.keys(tm)) {
+    const v = tm[name] || {}, T = team(name);
+    T.act = { agent:v.agent || 'main', verktyg:v.verktyg || v.tool || '', mal:v.mal || '', ts:tsOf(v.ts) };
+    if (T.act.ts) T.actBy.set(String(T.act.agent).toLowerCase(), Math.max(T.actBy.get(String(T.act.agent).toLowerCase()) || 0, T.act.ts));
+    T.perMin = Number(v.perMin) || 0;
+    // agenter: {<agent>: {verktyg, mal, ts}} — every agent seen lately, so several can glow at once
+    for (const [ag, x] of Object.entries(v.agenter || {})) {
+      const ts = tsOf(x && typeof x === 'object' ? x.ts : x), k = String(ag).toLowerCase();
+      if (ts) T.actBy.set(k, Math.max(T.actBy.get(k) || 0, ts));
+    }
+  }
+  let maxTs = lastActTs;
+  for (const it of (j && j.senaste) || []) {
+    const ts = tsOf(it.ts); if (!it.team || !ts) continue;
+    const T = team(it.team), ag = String(it.agent || 'main').toLowerCase();
+    T.actBy.set(ag, Math.max(T.actBy.get(ag) || 0, ts));
+    if (ts > lastActTs && booted && !calm && T.geo) {
+      const N = findNode(T, ag);
+      ripple(N ? N.x : T.geo.cx, N ? N.y : T.geo.cy, N ? KIND[N.kind].color : LAB[T.lab].color);
+      T.pulse = Math.max(T.pulse, 0.5);
+    }
+    maxTs = Math.max(maxTs, ts);
+  }
+  lastActTs = maxTs;
+  for (const T of teams.values()) { T.spark.push(T.perMin); if (T.spark.length > 60) T.spark.shift(); spark(T); glow(T); }
+}
+
+// ------------------------------------------------------------------ roster and evolution
+async function pollLag() {
+  const j = await api('/api/lag');
+  const tm = (j && j.teams) || {};
+  for (const name of Object.keys(tm)) {
+    const v = tm[name] || {}, T = team(name);
+    setLab(T, v.lab);
+    setHero(T, v.hero);
+    syncRoster(T, v.roster);
+  }
+  stats();
+}
+let lagTimer = null;
+const lagSoon = () => { clearTimeout(lagTimer); lagTimer = setTimeout(() => pollLag().catch(() => {}), 250); };
+let lastEv = 0;
+async function pollEvo() {
+  const j = await api(lastEv ? '/api/evolution?since=' + encodeURIComponent(lastEv) : '/api/evolution?limit=150');
+  const list = Array.isArray(j) ? j : ((j && (j.events || j.evolution || j.handelser)) || []);
+  let fresh = false;
+  for (const ev of list) {
+    const id = Number(ev.id);
+    if (isFinite(id) && id <= lastEv) continue;
+    if (isFinite(id)) lastEv = Math.max(lastEv, id);
+    const typ = ev.typ || ev.type || 'logg', who = ev.team || '';
+    if (who && !booted && (typ === 'agent.borta' || typ === 'formaga.borta') && ev.namn) {
+      const T = team(who); if (!findNode(T, ev.namn)) addGhost(T, typ === 'agent.borta' ? 'agent' : 'cap', String(ev.namn));
+    }
+    if (who && booted && typ !== 'logg') { const T = teams.get(who); if (T) T.pulse = 1; fresh = true; }
+    addFeed({ key:'e' + (ev.id != null ? ev.id : who + typ + ev.ts), ts:tsOf(ev.ts), type:typ, team:who,
+              text:ev.text || [who, (EV[typ] || ['event'])[0], ev.namn || ''].join(' ').trim(), grp:foreign(ev.grupp) ? gname(ev.grupp) : '' });
+  }
+  if (fresh) lagSoon();
+}
+
+// ------------------------------------------------------------------ spores
+const sporeSeen = new Set(), integSeen = new Set();
+const sporeFrom = new Map();               // group id -> number of spores from that group
+const threads = new Map();                 // "a>b" -> {a, b, n, bend, path}
+const ports = new Map();                   // group id -> {g, x, y, txt}
+const foreign = g => !!g && g !== myGroup && !(!myGroup && g === 'square');
+const gname = g => groupNames.get(g) || g;
+function foreignGroups() {
+  const s = new Set();
+  for (const g of sporeFrom.keys()) if (foreign(g)) s.add(g);
+  for (const g of groupNames.keys()) if (foreign(g)) s.add(g);
+  for (const th of threads.values()) for (const e of [th.a, th.b]) if (e.port) s.add(e.port);
+  return [...s].sort((a, b) => gname(a).localeCompare(gname(b), 'en'));
+}
+function port(id) {
+  let P = ports.get(id);
+  if (P) return P;
+  P = { id, x:0, y:0 };
+  P.g = S('g', { class:'mv' }, L.ports);
+  S('path', { class:'gate', d:'M-30,0 A30,20 0 0 0 30,0' }, P.g);
+  P.txt = S('text', { class:'ptxt', y:38 }, P.g);
+  ports.set(id, P);
+  return P;
+}
+function portText(P) {
+  const n = sporeFrom.get(P.id) || 0;
+  P.txt.innerHTML = '';
+  P.txt.appendChild(document.createTextNode(gname(P.id)));
+  const c = S('tspan', { class:'c' }, P.txt); c.textContent = '  ' + n + (n === 1 ? ' spore' : ' spores');
+}
+function endpoint(e) {
+  if (e.team) { const T = teams.get(e.team); if (T && T.geo) return { x:T.geo.cx, y:T.geo.cy, rx:T.geo.Rx + 8, ry:T.geo.R + 8 }; }
+  if (e.port) { const P = ports.get(e.port); if (P) return { x:P.x, y:16, rx:0, ry:0 }; }
+  return null;
+}
+function threadD(a, b, bend) {
+  const A = endpoint(a), B = endpoint(b); if (!A || !B) return null;
+  const dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+  const edge = E => E.rx ? 1 / Math.sqrt((ux / E.rx) ** 2 + (uy / E.ry) ** 2) : 0;   // centre to ellipse edge along the line
+  const ra = edge(A), rb = edge(B);
+  const x1 = A.x + ux * ra, y1 = A.y + uy * ra, x2 = B.x - ux * rb, y2 = B.y - uy * rb;
+  const mx = (x1 + x2) / 2 - uy * d * bend, my = (y1 + y2) / 2 + ux * d * bend;
+  return 'M' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + x2.toFixed(1) + ',' + y2.toFixed(1);
+}
+function thread(a, b) {
+  const key = (a.team ? 't:' + a.team : 'p:' + a.port) + '>' + (b.team ? 't:' + b.team : 'p:' + b.port);
+  let th = threads.get(key);
+  if (!th) {
+    th = { a, b, n:0, bend:(hash(key) % 2 ? 1 : -1) * 0.16 };
+    th.path = S('path', { class:'thr' + (a.port || b.port ? ' far' : '') }, L.threads);
+    threads.set(key, th);
+    if (a.port || b.port) needLayout = true;
+  }
+  th.n++;
+  th.path.setAttribute('stroke-width', Math.min(a.port || b.port ? 2.6 : 5, 1.4 + Math.log2(th.n)));
+  th.path.setAttribute('d', threadD(a, b, th.bend) || '');
+  return th;
+}
+async function pollSpores() {
+  const j = await api('/api/sporer?alla=1');
+  const list = Array.isArray(j) ? j : ((j && (j.sporer || j.spores)) || []);
+  list.sort((a, b) => tsOf(a.ts) - tsOf(b.ts));
+  const newFx = [];
+  for (const s of list) {
+    if (!s || s.id == null) continue;
+    const id = String(s.id), far = foreign(s.grupp), from = String(s.fran || '');
+    if (s.grupp && s.grupp_namn && !groupNames.has(s.grupp)) { groupNames.set(s.grupp, String(s.grupp_namn)); needLayout = true; }
+    for (const it of s.integrerad || []) if (it && it.grupp && it.grupp_namn && !groupNames.has(it.grupp)) { groupNames.set(it.grupp, String(it.grupp_namn)); needLayout = true; }
+    if (!sporeSeen.has(id)) {
+      sporeSeen.add(id);
+      const g = s.grupp || myGroup || 'square';
+      sporeFrom.set(g, (sporeFrom.get(g) || 0) + 1);
+      if (far) { needLayout = true; if (booted) newFx.push(() => arrive(s.grupp)); }
+      else if (from) {
+        const T = team(from);
+        T.spores.push(id); orbit(T, booted);
+        if (booted && T.geo && !calm) ripple(T.geo.cx, T.geo.cy - T.geo.R - ORB, '#5fd7a7');
+      }
+      addFeed({ key:'s' + id, ts:tsOf(s.ts), type:'spore', team:from, sub2:SPORE_TYPE[s.typ] || '',
+                text:from + ' shared “' + (s.titel || s.title || '') + '”', sub:short(String(s.lardom || s.lesson || ''), 150), grp:far ? gname(s.grupp) : '', dim:far });
+    }
+    for (const it of s.integrerad || []) {
+      if (!it || !it.team) continue;
+      const k = id + '|' + (it.grupp || '') + '|' + it.team;
+      if (integSeen.has(k)) continue;
+      integSeen.add(k);
+      const theirs = it.grupp ? foreign(it.grupp) : !teams.has(it.team) && far;
+      const a = far ? { port:s.grupp } : (from ? { team:from } : null);
+      const b = theirs ? (it.grupp ? { port:it.grupp } : null) : { team:it.team };
+      if (b && b.team) team(b.team);
+      if (a && b && !(a.team && a.team === b.team) && (a.team || b.team)) {
+        const th = thread(a, b);
+        if (booted) newFx.push(() => travel(th.path, b));
+      }
+      addFeed({ key:'i' + k, ts:tsOf(it.ts) || tsOf(s.ts), type:'integ', team:it.team,
+                text:it.team + ' took up “' + (s.titel || s.title || '') + '” from ' + (from || 'another team'), sub:short(String(it.hur || it.how || ''), 150),
+                grp:theirs && it.grupp ? gname(it.grupp) : (far ? 'from ' + gname(s.grupp) : ''), dim:far && theirs });
+    }
+  }
+  for (const T of teams.values()) T.hd.querySelector('.sc').textContent = T.spores.length ? T.spores.length + (T.spores.length === 1 ? ' spore' : ' spores') : '';
+  if (newFx.length) { if (needLayout) layout(); newFx.forEach(f => f()); }
+  for (const P of ports.values()) portText(P);
+  stats();
+}
+function placeSpores(T) {
+  const o = T.orb; if (!o) return;
+  [...T.orbRot.childNodes].forEach((c, i) => { const a = T.ang + i / Math.max(o.n, 1) * 2 * Math.PI; c.setAttribute('cx', (o.rx * Math.cos(a)).toFixed(1)); c.setAttribute('cy', (o.r * Math.sin(a)).toFixed(1)); });
+}
+function orbit(T, fresh) {
+  if (!T.geo) return;
+  const n = Math.min(16, T.spores.length), r = T.geo.R + ORB * 0.75, rx = T.geo.Rx + ORB * 0.75;
+  while (T.orbRot.childNodes.length < n) { const c = S('circle', { class:'spo' + (fresh && !calm ? ' newsp' : ''), r:4.5 }, T.orbRot); if (fresh) setTimeout(() => c.classList.remove('newsp'), 1500); }
+  T.orb = { r, rx, n };
+  placeSpores(T);
+}
+
+// ------------------------------------------------------------------ effects
+const fx = [];
+function ripple(x, y, color) {
+  if (calm || !isFinite(x)) return;
+  const c = S('circle', { class:'rip', cx:x, cy:y, r:6 }, L.fx);
+  c.style.setProperty('--c', color);
+  setTimeout(() => c.remove(), 1400);
+}
+function travel(path, to) {
+  const d = path.getAttribute('d');
+  if (calm || !d) return;
+  const dots = [0, 1, 2].map(i => S('circle', { class:'trav', r:6 - i * 1.7, opacity:1 - i * 0.3 }, L.fx));
+  fx.push({ path, len:path.getTotalLength(), t0:performance.now(), dur:2800, dots, done:() => {
+    const e = endpoint(to); if (e) { const p = path.getPointAtLength(path.getTotalLength()); ripple(p.x, p.y, '#5fd7a7'); }
+    if (to.team) { const T = teams.get(to.team); if (T) T.pulse = 1; }
+  } });
+}
+function arrive(g) {
+  const P = ports.get(g); if (!P || calm) return;
+  const path = S('path', { d:'M' + P.x + ',-30 L' + P.x + ',14', fill:'none', stroke:'none' }, L.fx);
+  const dots = [0, 1, 2].map(i => S('circle', { class:'trav', r:5.5 - i * 1.6, opacity:1 - i * 0.3 }, L.fx));
+  fx.push({ path, len:path.getTotalLength(), t0:performance.now(), dur:1600, dots, done:() => { ripple(P.x, 14, '#5fd7a7'); path.remove(); } });
+}
+const motes = [];
+function seedMotes() {
+  const W = stage.clientWidth || 1200, H = stage.clientHeight || 700;
+  for (let i = 0; i < 46; i++) {
+    const r = 0.6 + Math.random() * 1.6;
+    motes.push({ x:Math.random() * W, y:Math.random() * H, vx:(Math.random() - 0.5) * 6, vy:-2 - Math.random() * 5, r,
+                 el:S('circle', { class:'mote', r, opacity:(0.08 + Math.random() * 0.22).toFixed(2) }, L.motes) });
+  }
+}
+function blob(cx, cy, Rx, R, t, s1, s2, amp) {
+  const N = 28, p = [];
+  for (let i = 0; i < N; i++) {
+    const a = i / N * 2 * Math.PI;
+    const r = (1 + amp * (0.6 * Math.sin(3 * a + t * 0.5 + s1) + 0.4 * Math.sin(5 * a - t * 0.8 + s2) + 0.25 * Math.sin(2 * a + t * 0.3 + s2)));
+    p.push([cx + Rx * r * Math.cos(a), cy + R * r * Math.sin(a)]);
+  }
+  let d = 'M' + p[0][0].toFixed(1) + ',' + p[0][1].toFixed(1);
+  for (let i = 0; i < N; i++) {
+    const p0 = p[(i - 1 + N) % N], p1 = p[i], p2 = p[(i + 1) % N], p3 = p[(i + 2) % N];
+    d += 'C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ',' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' '
+       + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ',' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' '
+       + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+  }
+  return d + 'Z';
+}
+let lastFrame = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  if (needLayout) layout();
+  if (ts - lastFrame < 32) return;                     // about 30 frames a second is plenty
+  const dt = Math.min(0.1, (ts - lastFrame) / 1000); lastFrame = ts;
+  const t = calm ? 0 : ts / 1000;
+  for (const T of teams.values()) {
+    if (!T.geo || !T.cur) continue;
+    const c = T.cur, g = T.geo, f = calm ? 1 : 0.07;
+    c.cx += (g.cx - c.cx) * f; c.cy += (g.cy - c.cy) * f; c.R += (g.R - c.R) * f; c.Rx += (g.Rx - c.Rx) * f;
+    T.pulse *= 0.97;
+    const amp = calm ? 0.025 : 0.022 + 0.05 * T.pulse + Math.min(0.02, T.perMin / 800);
+    if (!calm || T.drawnR !== c.R + c.Rx) {
+      const d = blob(c.cx, c.cy, c.Rx, c.R, t, T.s1, T.s2, amp);
+      T.mem.setAttribute('d', d); T.memGlow.setAttribute('d', d); T.drawnR = c.R + c.Rx;
+    }
+    if (!calm && T.orb && T.orb.n) { T.ang += dt * 0.08; placeSpores(T); }
+  }
+  if (!calm) {
+    const W = stage.clientWidth, H = stage.clientHeight;
+    for (const m of motes) {
+      m.x += m.vx * dt; m.y += m.vy * dt;
+      if (m.y < -4) { m.y = H + 4; m.x = Math.random() * W; }
+      if (m.x < -4) m.x = W + 4; else if (m.x > W + 4) m.x = -4;
+      m.el.setAttribute('cx', m.x.toFixed(1)); m.el.setAttribute('cy', m.y.toFixed(1));
+    }
+  } else for (const m of motes) { m.el.setAttribute('cx', m.x.toFixed(1)); m.el.setAttribute('cy', m.y.toFixed(1)); }
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i], p = Math.min(1, (performance.now() - f.t0) / f.dur);
+    f.dots.forEach((d, j) => {
+      const q = Math.max(0, p - j * 0.035), e = q < 0.5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+      const pt = f.path.getPointAtLength(e * f.len);
+      d.setAttribute('cx', pt.x.toFixed(1)); d.setAttribute('cy', pt.y.toFixed(1));
+    });
+    if (p >= 1) { f.dots.forEach(d => d.remove()); fx.splice(i, 1); f.done && f.done(); }
+  }
+}
+
+// ------------------------------------------------------------------ feed
+const feedItems = new Map();
+let feedDirty = true, ord = 0;
+function addFeed(it) {
+  if (feedItems.has(it.key)) return;
+  it.isNew = booted; it.ord = ord++;
+  feedItems.set(it.key, it); feedDirty = true;
+}
+function boldTeam(text, who) {
+  text = String(text || '');
+  if (who && text.startsWith(who)) return '<b>' + esc(who) + '</b>' + esc(text.slice(who.length));
+  return esc(text);
+}
+function renderFeed() {
+  if (!feedDirty) return;
+  feedDirty = false;
+  const list = [...feedItems.values()].sort((a, b) => (b.ts - a.ts) || (b.ord - a.ord));
+  if (list.length > 400) for (const it of list.slice(400)) feedItems.delete(it.key);
+  const box = $('feed');
+  if (!list.length) { box.innerHTML = '<div class="fempty">Nothing has evolved yet.<br>When a team hires, spawns, dissolves or crowns a winner, it shows up here. So does every spore a team shares, and every team that takes one up.</div>'; return; }
+  box.innerHTML = list.slice(0, 60).map(it => {
+    const e = EV[it.type] || ['event', 'var(--dim)'];
+    return '<div class="fi' + (it.isNew && !calm ? ' new' : '') + (it.type === 'logg' || it.dim ? ' dimmed' : '') + '" style="--c:' + e[1] + '">'
+      + '<div class="fm"><span class="tag">' + e[0] + '</span>' + (it.sub2 ? '<span class="tag2">' + esc(it.sub2) + '</span>' : '')
+      + '<time>' + hhmm(it.ts) + '</time>' + (it.grp ? '<span class="fg">' + esc(it.grp) + '</span>' : '') + '</div>'
+      + '<div class="ft">' + boldTeam(it.text, it.team) + '</div>' + (it.sub ? '<div class="fs">' + esc(it.sub) + '</div>' : '') + '</div>';
+  }).join('');
+  for (const it of list) it.isNew = false;
+}
+function stats() {
+  let nodes = 0, sp = 0, gh = 0;
+  for (const T of teams.values()) { nodes += T.nodes.size; sp += T.spores.length; gh += T.ghosts.length; }
+  const nt = teams.size;
+  $('stats').innerHTML = '<b>' + nt + '</b> ' + (nt === 1 ? 'team' : 'teams') + ' · <b>' + nodes + '</b> alive · <b>' + gh + '</b> in the void · <b>'
+    + sp + '</b> ' + (sp === 1 ? 'spore' : 'spores') + ' shared · <b>' + integSeen.size + '</b> taken up';
+}
+
+// ------------------------------------------------------------------ health, hub names, loop
+let startad;
+async function health() {
+  const h = await api('/api/health').catch(() => null);
+  if (!h) return;
+  myGroup = h.grupp || ''; hubUrl = h.hub_url || ''; onHub = !!h.hub && !h.grupp;
+  $('grp').textContent = h.grupp_namn || '';
+  if (h.grupp_namn) document.title = 'Agent teams · ' + h.grupp_namn;
+  if (h.startad) { if (startad && h.startad !== startad) location.reload(); startad = startad || h.startad; }
+}
+async function hubNames() {
+  const base = onHub ? '' : hubUrl.replace(/\/+$/, '');
+  if (!onHub && !base) return;
+  const j = await fetch(base + '/api/hub/grupper', { cache:'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const list = Array.isArray(j) ? j : ((j && j.grupper) || []);
+  let changed = false;
+  for (const g of list) if (g && g.id && groupNames.get(g.id) !== (g.namn || g.id)) { groupNames.set(g.id, g.namn || g.id); changed = true; }
+  if (changed) needLayout = true;
+}
+function liveState() {
+  const el = $('live'), fresh = Date.now() - okAt < 10000;
+  el.className = 'live ' + (fresh ? 'ok' : 'bad');
+  $('lv').textContent = fresh ? 'live' : (okAt ? 'reconnecting' : 'connecting');
+}
+const safe = f => () => f().catch(() => {});
+async function boot() {
+  seedMotes();
+  await health();
+  await Promise.allSettled([hubNames(), pollLag()]);
+  await Promise.allSettled([pollEvo(), pollSpores(), pollAkt()]);
+  layout(); renderFeed(); stats(); liveState();
+  booted = true;
+  requestAnimationFrame(frame);
+  setInterval(safe(pollAkt), 2000);
+  setInterval(safe(pollEvo), 3000);
+  setInterval(safe(pollLag), 5000);
+  setInterval(safe(pollSpores), 5000);
+  setInterval(safe(health), 15000);
+  setInterval(safe(hubNames), 60000);
+  setInterval(() => { renderFeed(); stats(); liveState(); }, 1000);
+}
+boot();
+</script>
+</body>
+</html>

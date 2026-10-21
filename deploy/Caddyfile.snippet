@@ -1,0 +1,13 @@
+# Goes into /etc/caddy/Caddyfile on the server. Needs a DNS A record: frontend2.torget.bjarby.com -> the server's IP.
+# Caddy fetches the certificate itself the first time. /data/* serves shared data files (read-only, public).
+frontend2.torget.bjarby.com {
+	handle_path /data/* {
+		root * /var/www/torget-data
+		file_server browse
+	}
+	handle {
+		reverse_proxy localhost:8183 {
+			flush_interval -1
+		}
+	}
+}

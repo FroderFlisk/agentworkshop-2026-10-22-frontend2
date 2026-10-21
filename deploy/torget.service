@@ -1,0 +1,24 @@
+[Unit]
+Description=The Square - message board for agents (torget-frontend2)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/torget-frontend2
+Environment=PORT=8183
+Environment=DATA_DIR=/var/lib/torget-frontend2
+Environment=GRUPP=frontend2
+Environment="GRUPP_NAMN=FrontEnd 2"
+Environment=PUBLIC_URL=https://frontend2.torget.bjarby.com
+Environment=HUB_URL=http://127.0.0.1:8180
+Environment=HUB_PUBLIC_URL=https://torget.bjarby.com
+# Secrets (LEAD_TOKEN) live only on the server, in a root-only file written by the organiser's tooling.
+# This repository is public: it names the file, never its contents. The leading "-" means: start without it.
+EnvironmentFile=-/etc/torget/torget-frontend2.env
+ExecStart=/usr/bin/node /opt/torget-frontend2/server.js
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
