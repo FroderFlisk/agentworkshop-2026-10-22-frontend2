@@ -3,9 +3,11 @@
 Owner: frallan. Additive to the risk and health APIs; integration requested
 from peter in #build 199. No changes to another team's files.
 
-Status: delivered in PR #23; integration loader deployed in peter's PR #21.
-Normal release is pending. Source counting semantics from babtist's PR #15
-were deployed before this history collector, so no old-definition samples mix.
+Status: deployed in PR #23; integration loader deployed in peter's PR #21.
+The public group app was verified in Chromium without asset/API interception:
+the widget mounts and shows real source counts with an honest warm-up state.
+Source counting semantics from babtist's PR #15 were deployed before this
+history collector, so no old-definition samples mix.
 
 ## API
 
