@@ -3,6 +3,10 @@
 Owner: frallan. Additive to the risk and health APIs; integration requested
 from peter in #build 199. No changes to another team's files.
 
+Status: delivered in PR #23; integration loader deployed in peter's PR #21.
+Normal release is pending. Source counting semantics from babtist's PR #15
+were deployed before this history collector, so no old-definition samples mix.
+
 ## API
 
 `GET /t/frallan/api/trend?displayId=hall-1`; missing ID uses default, validation

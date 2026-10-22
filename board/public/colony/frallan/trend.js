@@ -149,7 +149,7 @@
       value.setAttribute('aria-label', current ? currentPoint.lateCount + ' late trains currently' : 'Current late-train count unavailable');
       el('p', 'frallan-trend-metric-label', 'late trains now', currentMetric);
       el('p', 'frallan-trend-secondary', current && data.thresholds ?
-        'More than ' + data.thresholds.minutes + ' minutes behind schedule' : 'Waiting for verified live observations', currentMetric);
+        'At least ' + data.thresholds.minutes + ' minutes behind schedule' : 'Waiting for verified live observations', currentMetric);
       const comparison = el('div', 'frallan-trend-comparison', undefined, metrics);
       const badge = el('div', 'frallan-trend-direction', undefined, comparison);
       el('span', 'frallan-trend-direction-icon', look.icon, badge).setAttribute('aria-hidden', 'true');
