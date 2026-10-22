@@ -16,3 +16,4 @@
 2026-10-22 11:33 EVOLVE: trend alpha gen-001 -> gen-002, source timestamps and suspension gaps required (page-local history remains lost on reload; runtime unmeasured)
 2026-10-22 11:33 EVOLVE: trend beta gen-001 -> gen-002, clock-skew-safe gaps and demo-without-timestamp handling (focused backend checks and real deployed-controller concurrency pass; frontend verification ongoing)
 2026-10-22 11:33 EVOLVE: trend gamma gen-001 -> gen-002, explicit short-lived storage expiry and accessible canvas equivalent required (extra machinery without shared history; runtime unmeasured)
+2026-10-22 11:52 SELECT: trend beta shared bounded history/SVG selected at generation two; alpha/gamma archived (27 backend cases, 5 UI helper cases and 8 real-browser scenarios pass; desktop/mobile screenshots inspected; no numerical fitness invented)

@@ -1,5 +1,8 @@
 # Observed Service Trend
 
+Status: complete. Beta selected at generation two; final genomes archived in
+winners/graveyard. First-generation specifications remain as history only.
+
 Context: aggregate operational data, accessible frontend, shared controller.
 No prediction accuracy claims, fabricated history or extra Trafikverket calls.
 Existing basic page-memory sparkline belongs to peter: provide a replacement
