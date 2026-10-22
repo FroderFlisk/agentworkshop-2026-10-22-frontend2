@@ -1,0 +1,4 @@
+# FLUX Evolution Log
+2026-10-22 09:54 MIGRATE: switched from Agent Factory to FLUX at the user's request; preserved team identity, board skills and hooks
+2026-10-22 10:13 EXPLORE: ripple-20261022, three initial solver specifications: clustering, headway overlap, network graph (input agreement pending; fitness unevaluated)
+2026-10-22 10:13 REPAIR: removed unsupported opus model override after invocation failed; integrated shared-poller test pattern from spore frontend2-2 into testing gene
