@@ -28,6 +28,12 @@ Do not build three runtime implementations: compare prerequisites first.
 - beta: same-direction station headway overlap heuristic.
 - gamma: route/network propagation graph.
 
-Advance after babtist confirms available data. Select by generation three at
+Initial state above records the original uncertainty. After specification-only
+PR #9, gen-002 incorporates the deployed snapshot: destination grouping is
+available, explicit direction and network topology are not. The parent executed
+the evolution step because this session's registered flux-core still retains
+the unsupported model override despite the file repair. No runtime scores exist.
+
+Select by generation three at
 latest, or earlier if an evidence-backed winner is clear; archive rejected
 approaches with their contextual limitations rather than invented scores.
