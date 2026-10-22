@@ -36,8 +36,31 @@
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  // Station markers are reused across polls. A click selects the station; station-panel.js shows its next trains.
+  const stationMarkers = new Map();
+  const ring = L.circleMarker([0, 0], { radius: 18, color: '#fff', weight: 3, fill: false, dashArray: '4 4', interactive: false });
+  window.peterMap.stations = new Map();
+  window.peterMap.selected = null;
+  window.peterMap.select = (code, opts = {}) => {
+    const s = window.peterMap.stations.get(code);
+    if (!s) return;
+    window.peterMap.selected = code;
+    ring.setLatLng([s.lat, s.lon]).addTo(map).bringToFront();
+    if (opts.pan) map.panTo([s.lat, s.lon]);
+    window.dispatchEvent(new CustomEvent('peter:station', { detail: { code } }));
+  };
+  function stationMarker(s) {
+    let m = stationMarkers.get(s.station);
+    if (!m) {
+      m = L.circleMarker([s.lat, s.lon]).bindTooltip('').addTo(layer);
+      m.on('click', () => window.peterMap.select(m.station.station));
+      stationMarkers.set(s.station, m);
+    }
+    m.station = s;
+    return m;
+  }
+
   function draw(data) {
-    layer.clearLayers();
     const t = data.thresholds || {};
     window.peterMap.thresholds = data.thresholds || null;
     for (const s of data.stations || []) if (s.station && s.name) window.peterMap.names.set(s.station, s.name);
@@ -46,20 +69,28 @@
     const order = { ok: 0, warning: 1, severe: 2 };
     const stations = (data.stations || []).filter((s) => typeof s.lat === 'number' && typeof s.lon === 'number')
       .sort((a, b) => (order[a.level] ?? 0) - (order[b.level] ?? 0));
+    const seen = new Set();
     for (const s of stations) {
       const color = COLOR[s.level] || '#8a98b3';
       const radius = 5 + Math.min(10, Math.sqrt(s.lateCount || 0) * 3);
       const [ring, weight] = RING[s.level] || RING.ok;
-      L.circleMarker([s.lat, s.lon], { radius, color: ring, weight, fillColor: color, fillOpacity: .9 })
-        .bindTooltip(`<b>${esc(s.name || s.station)}</b> · ${LEVEL_TEXT[s.level] || 'unknown'}<br>${s.lateCount} late (≥ ${t.minutes} min) · ${s.canceledCount} canceled`)
-        .addTo(layer);
+      const m = stationMarker(s);
+      seen.add(s.station);
+      m.setLatLng([s.lat, s.lon]).setRadius(radius).setStyle({ color: ring, weight, fillColor: color, fillOpacity: .9 });
+      m.setTooltipContent(`<b>${esc(s.name || s.station)}</b> · ${LEVEL_TEXT[s.level] || 'unknown'}<br>${s.lateCount} late (≥ ${t.minutes} min) · ${s.canceledCount} canceled<br><i>Click for next trains</i>`);
+      m.bringToFront();
+      window.peterMap.stations.set(s.station, s);
       pts.push([s.lat, s.lon]);
     }
+    for (const [id, m] of stationMarkers) if (!seen.has(id)) { layer.removeLayer(m); stationMarkers.delete(id); window.peterMap.stations.delete(id); }
+    const sel = window.peterMap.stations.get(window.peterMap.selected);
+    if (sel) ring.setLatLng([sel.lat, sel.lon]).bringToFront();
+    window.dispatchEvent(new CustomEvent('peter:stations'));
     if (!fitted && pts.length > 1) { map.fitBounds(pts, { padding: [20, 20] }); fitted = true; }
     const counts = stations.reduce((a, s) => (a[s.level] = (a[s.level] || 0) + 1, a), {});
     const status = data.upstream === 'no-key' ? ' · demo data' : data.upstream === 'error' ? ' · upstream error, may be stale' : '';
     note.textContent = `${stations.length} stations · ${counts.severe || 0} severe, ${counts.warning || 0} warning` +
-      ` · station warning from 1 late train, severe from ${t.trains}${status}`;
+      ` · station warning from 1 late train, severe from ${t.trains} (stops in the last 15 min and ahead)${status}`;
   }
 
   async function poll() {

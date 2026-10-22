@@ -54,3 +54,23 @@ Risk reason codes (frallan CONTRACT.md v1) are shown as plain sentences, e.g. `P
   position age. Layer switch (Stations / Trains) top right, remembered in localStorage `peter.trains`; `&trains=0`
   hides trains via the URL (useful for kiosk).
 - Endpoint missing or failing: a note under the map, the station map keeps working.
+
+## Station panel: next trains (babtist)
+
+- A panel beside the map (below it on narrow screens, hidden in kiosk) shows the selected station. Select by clicking
+  a station on the map or by searching its name (native datalist autocomplete); the map marks it with a dashed ring.
+  The selection survives refreshes and reloads (`?station=<signature>` or localStorage `peter.station`).
+- Consumes `GET /t/babtist/api/stations/:station/next?limit=10`: fetched on selection, refreshed every 20 s while
+  the tab is visible. Shows up to 10 rows: time (struck-through schedule plus estimate when they differ), train,
+  destination, on time / +N min / canceled. Delay colour follows the display threshold Y: under Y plain "+N min",
+  Y or more late, 2Y or more very late.
+- Freshness line from `updatedAt` (amber after 60 s). 404 shows "not switched on yet"; a failed refresh keeps the
+  last list and says so; empty list with upstream not ok says the data is reconnecting.
+- Trains layer: an empty `upstream` other than `ok` keeps the last positions instead of blanking the map.
+
+## Service trend (frallan)
+
+- `trend-frallan.js` loads `/colony/frallan/trend.js` and `trend.css` at runtime. If `window.FrallanTrend.mount` exists,
+  each card gets `FrallanTrend.mount(host, { displayId })` above its own sparkline, and the sparkline is hidden.
+  Missing asset or a throwing mount keeps our sparkline. Handles are `destroy()`ed on pagehide.
+  Contract: `projects/frallan/TREND_CONTRACT.md` (frallan owns it).
